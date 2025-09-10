@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Coordenador</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            background: linear-gradient(to right, #6a11cb, #2575fc); /* Gradiente do tema */
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: rgba(255, 255, 255, 0.1); /* Fundo translúcido */
+            backdrop-filter: blur(10px); /* Efeito vidro fosco */
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+        
+        .sidebar-header p {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 400;
+        }
+
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #ffb703; /* Cor de destaque */
+        }
+        
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .footer a {
+            color: #ffb703;
+            text-decoration: none;
+            font-size: 1em;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: #fb8500;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+            color: #fff;
+        }
+
+        .content-section {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                padding: 10px 20px;
+                flex-direction: row;
+                justify-content: space-around;
+            }
+            .sidebar-header {
+                display: none;
+            }
+            .sidebar-nav {
+                width: 100%;
+            }
+            .sidebar-nav ul {
+                display: flex;
+                justify-content: space-around;
+                width: 100%;
+            }
+            .sidebar-nav li {
+                flex-grow: 1;
+                text-align: center;
+            }
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Acadêmica</h2>
+                <p>Olá, {{ user.username }}!</p>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="active">Dashboard</a></li>
+                    <li><a href="#">Importar Histórico</a></li>
+                    <li><a href="#">Análise de Histórico</a></li>
+                    <li><a href="#">Matrículas e Turmas</a></li>
+                </ul>
+            </nav>
+            <div class="footer">
+                <a href="#">Sair</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="header">
+                <h1>Painel do Coordenador</h1>
+            </div>
+            <div class="content-section">
+                <p>Este é o seu painel de controle. Use o menu lateral para navegar entre as funcionalidades do sistema.</p>
+                </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -4,7 +4,6 @@ from django.contrib.auth.forms import AuthenticationForm
 from .forms import CoordenadorCadastroForm
 from django.contrib.auth.decorators import login_required
 
-
 def autocadastro_coordenador(request):
     if request.method == 'POST':
         form = CoordenadorCadastroForm(request.POST)
@@ -25,7 +24,7 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
-            return redirect('home') # Redireciona para a página inicial após o login
+            return redirect('painel') # Redireciona para a página inicial após o login
     else:
         form = AuthenticationForm()
     
@@ -34,3 +33,7 @@ def login_view(request):
 @login_required
 def painel_coordenador(request):
     return render(request, 'core/painel.html', {})
+
+def landing_page(request):
+    return render(request, 'core/landing_page.html', {})
+

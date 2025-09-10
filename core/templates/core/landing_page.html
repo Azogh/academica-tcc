@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acadêmica: Sistema de Rematrículas</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #6a11cb, #2575fc); /* Gradiente moderno */
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Para evitar scroll indesejado do background */
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.1); /* Fundo translúcido */
+            backdrop-filter: blur(10px); /* Efeito de vidro fosco */
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); /* Sombra mais suave */
+            text-align: center;
+            max-width: 700px;
+            width: 90%;
+            position: relative;
+            animation: fadeIn 1s ease-out; /* Animação de entrada */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        p {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px; /* Espaço entre os botões */
+            margin-top: 30px;
+        }
+
+        .cta-buttons a {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: #ffb703; /* Cor de destaque */
+            color: #2c3e50; /* Texto escuro para contraste */
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .cta-buttons a:hover {
+            background-color: #fb8500; /* Tom mais escuro no hover */
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .secondary-link {
+            background-color: transparent !important;
+            border: 2px solid #ffb703;
+            color: #ffb703 !important;
+            box-shadow: none !important;
+        }
+
+        .secondary-link:hover {
+            background-color: rgba(255, 183, 3, 0.1) !important;
+            color: #fb8500 !important;
+            border-color: #fb8500;
+        }
+
+        /* Opcional: Adicionar algumas formas abstratas para um toque moderno */
+        .shape1, .shape2 {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            z-index: -1;
+            animation: moveShapes 15s infinite alternate ease-in-out;
+        }
+        .shape1 { width: 150px; height: 150px; top: 10%; left: 5%; }
+        .shape2 { width: 200px; height: 200px; bottom: 15%; right: 8%; animation-delay: 2s; }
+
+        @keyframes moveShapes {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, 30px) scale(1.1); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="shape1"></div>
+        <div class="shape2"></div>
+        <h1>Acadêmica</h1>
+        <p>Simplifique o processo de rematrículas com inteligência artificial.</p>
+        <div class="cta-buttons">
+            <a href="{% url 'login' %}">Entrar no Sistema</a>
+            <a href="{% url 'autocadastro_coordenador' %}" class="secondary-link">Primeiro Acesso? Cadastre-se</a>
+        </div>
+    </div>
+</body>
+</html>
