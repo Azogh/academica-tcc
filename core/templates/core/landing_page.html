@@ -1,124 +1,191 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acadêmica: Sistema de Rematrículas</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acadêmica: Sistema de Rematrículas</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(to right, #6a11cb, #2575fc); /* Gradiente moderno */
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            overflow: hidden; /* Para evitar scroll indesejado do background */
-        }
+    :root {
+      --primary-color-dark: #6a11cb;
+      --primary-color-light: #2575fc;
+      --accent-color: #ffb703;
+      --accent-color-hover: #fb8500;
+      --text-color: #fff;
+      --container-bg: rgba(255, 255, 255, 0.1);
+    }
 
-        .container {
-            background-color: rgba(255, 255, 255, 0.1); /* Fundo translúcido */
-            backdrop-filter: blur(10px); /* Efeito de vidro fosco */
-            padding: 50px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); /* Sombra mais suave */
-            text-align: center;
-            max-width: 700px;
-            width: 90%;
-            position: relative;
-            animation: fadeIn 1s ease-out; /* Animação de entrada */
-        }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, var(--primary-color-dark), var(--primary-color-light));
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    header {
+      padding: 80px 20px;
+      text-align: center;
+    }
 
-        h1 {
-            font-size: 3em;
-            margin-bottom: 15px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
+    header h1 {
+      font-size: 3em;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
 
-        p {
-            font-size: 1.2em;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            font-weight: 300;
-        }
+    header p {
+      font-size: 1.2em;
+      font-weight: 300;
+      max-width: 650px;
+      margin: 0 auto 30px;
+    }
 
-        .cta-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px; /* Espaço entre os botões */
-            margin-top: 30px;
-        }
+    .cta-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
 
-        .cta-buttons a {
-            display: inline-block;
-            padding: 14px 28px;
-            background-color: #ffb703; /* Cor de destaque */
-            color: #2c3e50; /* Texto escuro para contraste */
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
+    .cta-button {
+      padding: 15px 30px;
+      background-color: var(--accent-color);
+      color: #2c3e50;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
 
-        .cta-buttons a:hover {
-            background-color: #fb8500; /* Tom mais escuro no hover */
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-        }
+    .cta-button:hover {
+      background-color: var(--accent-color-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    }
 
-        .secondary-link {
-            background-color: transparent !important;
-            border: 2px solid #ffb703;
-            color: #ffb703 !important;
-            box-shadow: none !important;
-        }
+    section {
+      background: var(--container-bg);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 60px 40px;
+      margin: 40px auto;
+      max-width: 960px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
 
-        .secondary-link:hover {
-            background-color: rgba(255, 183, 3, 0.1) !important;
-            color: #fb8500 !important;
-            border-color: #fb8500;
-        }
+    section h2 {
+      font-size: 2.3em;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 40px;
+      position: relative;
+    }
 
-        /* Opcional: Adicionar algumas formas abstratas para um toque moderno */
-        .shape1, .shape2 {
-            position: absolute;
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            z-index: -1;
-            animation: moveShapes 15s infinite alternate ease-in-out;
-        }
-        .shape1 { width: 150px; height: 150px; top: 10%; left: 5%; }
-        .shape2 { width: 200px; height: 200px; bottom: 15%; right: 8%; animation-delay: 2s; }
+    section h2::after {
+      content: '';
+      width: 80px;
+      height: 4px;
+      background: var(--accent-color);
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 2px;
+    }
 
-        @keyframes moveShapes {
-            0% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(30px, 30px) scale(1.1); }
-            100% { transform: translate(0, 0) scale(1); }
-        }
+    .steps, .author {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+    }
 
-    </style>
+    .step {
+      flex: 1 1 220px;
+      max-width: 240px;
+      text-align: center;
+    }
+
+    .step img {
+      width: 70px;
+      margin-bottom: 15px;
+    }
+
+    .author img {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      border: 4px solid var(--accent-color);
+      object-fit: cover;
+    }
+
+    .author-text {
+      max-width: 500px;
+      text-align: center;
+    }
+
+    .author-text h3 {
+      margin: 0;
+      font-size: 1.5em;
+    }
+
+    .author-text p {
+      margin: 10px 0 20px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="shape1"></div>
-        <div class="shape2"></div>
-        <h1>Acadêmica</h1>
-        <p>Simplifique o processo de rematrículas com inteligência artificial.</p>
-        <div class="cta-buttons">
-            <a href="{% url 'login' %}">Entrar no Sistema</a>
-            <a href="{% url 'autocadastro_coordenador' %}" class="secondary-link">Primeiro Acesso? Cadastre-se</a>
-        </div>
+
+  <header>
+    <h1>Acadêmica: Sistema de Rematrículas Inteligente</h1>
+    <p>Uma plataforma desenvolvida para coordenadores: automatize o processo de análise de históricos, receba sugestões com IA e gere documentos de rematrícula com praticidade.</p>
+    <div class="cta-buttons">
+      <a href="{% url 'login' %}" class="cta-button">Acessar Plataforma</a>
     </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>Fluxo de Trabalho do Coordenador</h2>
+      <div class="steps">
+        <div class="step">
+          <img src="https://img.icons8.com/color/96/000000/upload.png" alt="Importar Histórico">
+          <h3>1. Importar Histórico</h3>
+          <p>Carregue o histórico escolar do aluno para análise.</p>
+        </div>
+        <div class="step">
+          <img src="https://img.icons8.com/color/96/000000/search.png" alt="Avaliar Histórico">
+          <h3>2. Avaliar Histórico</h3>
+          <p>Verifique disciplinas concluídas e pendentes.</p>
+        </div>
+        <div class="step">
+          <img src="https://img.icons8.com/color/96/000000/artificial-intelligence.png" alt="Sugestões IA">
+          <h3>3. Sugestões com IA</h3>
+          <p>Receba indicações automáticas de disciplinas para matrícula.</p>
+        </div>
+        <div class="step">
+          <img src="https://img.icons8.com/color/96/000000/document.png" alt="Gerar Documento">
+          <h3>4. Gerar Documento</h3>
+          <p>Exporte a solicitação pronta para formalização.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Sobre o Projeto</h2>
+      <div class="author">
+        <img src="https://via.placeholder.com/150" alt="Foto do Autor">
+        <div class="author-text">
+          <h3>André Gustavo Silva Ozga</h3>
+          <p>Sou estudante de Sistemas de Informação no IFFar e este é meu TCC. O Acadêmica nasceu da necessidade de modernizar e agilizar a rematrícula, reduzindo burocracias com apoio da Inteligência Artificial.</p>
+          <a href="URL_DO_SEU_GITHUB" target="_blank" class="cta-button">Ver Código no GitHub</a>
+        </div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>

@@ -1,6 +1,7 @@
-# core/forms.py
 from django import forms
-from .models import Usuario
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from .models import Usuario, MatrizCurricular
+
 
 class CoordenadorCadastroForm(forms.ModelForm):
     password = forms.CharField(label='Senha', widget=forms.PasswordInput)
@@ -22,3 +23,15 @@ class CoordenadorCadastroForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+    
+    # Formulário de Cadastro de Coordenador
+class CoordenadorCadastroForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = Usuario
+        fields = UserCreationForm.Meta.fields + ('gestao_inicio', 'portaria',)
+
+# Formulário para Matriz Curricular
+class MatrizCurricularForm(forms.ModelForm):
+    class Meta:
+        model = MatrizCurricular
+        fields = ['nome', 'curso', 'ch_total', 'estagio', 'acc', 'ano_referencia']
