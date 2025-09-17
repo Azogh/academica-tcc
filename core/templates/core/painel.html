@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Coordenador</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
@@ -105,13 +106,19 @@
             font-size: 2em;
             color: #fff;
         }
-
+        
         .content-section {
             background-color: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         @media (max-width: 768px) {
@@ -156,14 +163,16 @@
             </div>
             <nav class="sidebar-nav">
                 <ul>
-                    <li><a href="#" class="active">Dashboard</a></li>
-                    <li><a href="#">Importar Histórico</a></li>
-                    <li><a href="#">Análise de Histórico</a></li>
-                    <li><a href="#">Matrículas e Turmas</a></li>
+                    <li><a href="{% url 'painel' %}" class="active">Dashboard</a></li>
+                    <li><a href="{% url 'listar_matrizes' %}">Gerenciar Matrizes</a></li>
+                    <li><a href="{% url 'listar_disciplinas' %}">Gerenciar Disciplinas</a></li>
+                    <li><a href="{% url 'listar_turmas' %}">Gerenciar Turmas</a></li>
+                    <li><a href="{% url 'listar_horarios' %}">Gerenciar Horários</a></li>
+                    <li><a href="{% url 'logout' %}">Sair</a></li>
                 </ul>
             </nav>
             <div class="footer">
-                <a href="#">Sair</a>
+                <a href="#">Desenvolvido por Azogh</a>
             </div>
         </aside>
 
@@ -171,9 +180,67 @@
             <div class="header">
                 <h1>Painel do Coordenador</h1>
             </div>
+            
             <div class="content-section">
-                <p>Este é o seu painel de controle. Use o menu lateral para navegar entre as funcionalidades do sistema.</p>
+                <h2>Métricas de Matrícula</h2>
+                <div class="chart-container">
+                    <canvas id="statusChart"></canvas>
                 </div>
+            </div>
+
+            <script>
+                const data = {
+                    labels: ['Matriculados', 'Pendentes', 'Finalizados'],
+                    datasets: [{
+                        label: 'Status de Matrículas',
+                        data: [15, 7, 25],
+                        backgroundColor: [
+                            'rgba(255, 183, 3, 0.8)',
+                            'rgba(255, 85, 0, 0.8)',
+                            'rgba(106, 17, 203, 0.8)',
+                        ],
+                        borderColor: [
+                            'rgba(255, 183, 3, 1)',
+                            'rgba(255, 85, 0, 1)',
+                            'rgba(106, 17, 203, 1)',
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+
+                const config = {
+                    type: 'bar',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.8)',
+                                },
+                            },
+                            x: {
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.8)',
+                                },
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'rgba(255, 255, 255, 0.8)',
+                                }
+                            }
+                        }
+                    }
+                };
+
+                var myChart = new Chart(
+                    document.getElementById('statusChart'),
+                    config
+                );
+            </script>
         </main>
     </div>
 </body>
