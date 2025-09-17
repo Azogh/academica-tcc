@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 # Modelo USUARIO (Tabela USUARIO)
-# Usando o modelo de usuário padrão do Django para maior segurança e funcionalidade.
 class Usuario(AbstractUser):
     gestao_inicio = models.DateField(null=True, blank=True)
     portaria = models.CharField(max_length=15, null=True, blank=True)
@@ -10,14 +9,14 @@ class Usuario(AbstractUser):
     # Adicione estes argumentos para resolver o conflito de nomes
     groups = models.ManyToManyField(
         'auth.Group',
-        related_name='core_usuarios', # Nome exclusivo para o relacionamento
+        related_name='core_usuarios', 
         blank=True,
         help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
         related_query_name='core_usuario',
     )
     user_permissions = models.ManyToManyField(
         'auth.Permission',
-        related_name='core_usuarios', # Nome exclusivo para o relacionamento
+        related_name='core_usuarios', 
         blank=True,
         help_text='Specific permissions for this user.',
         related_query_name='core_usuario',
@@ -31,7 +30,6 @@ class Usuario(AbstractUser):
 
 # Modelo ALUNO (Tabela ALUNO)
 class Aluno(models.Model):
-    # O Django já cria o campo 'id' automaticamente
     nome = models.CharField(max_length=100)
     matricula = models.CharField(max_length=10)
     ano_ingresso = models.CharField(max_length=6)
@@ -44,7 +42,7 @@ class Aluno(models.Model):
 
 # Modelo MATRIZ_CURRICULAR (Tabela MATRIZ_CURRICULAR)
 class MatrizCurricular(models.Model):
-    # O Django já cria o campo 'id' automaticamente
+    
     nome = models.CharField(max_length=45)
     curso = models.CharField(max_length=100)
     ch_total = models.IntegerField()
@@ -78,11 +76,18 @@ class Disciplinas(models.Model):
 # Modelo HISTORICO (Tabela HISTORICO)
 class Historico(models.Model):
     STATUS_CHOICES = [
-        ('CANC', 'Cancelado'),
-        ('TRANC', 'Trancado'),
-        ('REPMF', 'Reprovado por Média e Frequência'),
+        
         ('APR', 'Aprovado'),
+        ('CANC', 'Cancelado'),
+        ('CUMP', 'Cumpriu'),
+        ('DISP', 'Dispensado'),
+        ('MATR', 'Matriculado'),
+        ('REP', 'Reprovado por média'),
+        ('REPF', 'Reprovado por falta'),
+        ('REPMF', 'Reprovado por média e falta'),
+        ('TRANC', 'Matrícula trancada'),
     ]
+    
     status = models.CharField(max_length=5, choices=STATUS_CHOICES)
     disciplina = models.ForeignKey(Disciplinas, on_delete=models.CASCADE)
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
@@ -125,7 +130,8 @@ class Horario(models.Model):
         ('SEG', 'Segunda-feira'),
         ('TER', 'Terça-feira'),
         ('QUA', 'Quarta-feira'),
-        # Adicione outros dias conforme necessário
+        ('QUI', 'Quinta-feira'),
+        ('SEX', 'Sexta-feira'),
     ]
     PERIODO_CHOICES = [
         ('1-2', 'Período 1 e 2'),
