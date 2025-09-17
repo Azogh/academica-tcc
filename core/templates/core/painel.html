@@ -10,8 +10,9 @@
         body {
             font-family: 'Poppins', sans-serif;
             margin: 0;
-            background-color: #f0f2f5;
-            color: #333;
+            background: linear-gradient(to right, #6a11cb, #2575fc); /* Gradiente do tema */
+            color: #fff;
+            min-height: 100vh;
         }
 
         .dashboard-container {
@@ -21,8 +22,8 @@
 
         .sidebar {
             width: 250px;
-            background-color: #2c3e50;
-            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1); /* Fundo translúcido */
+            backdrop-filter: blur(10px); /* Efeito vidro fosco */
             padding: 20px;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
             display: flex;
@@ -39,6 +40,11 @@
             font-size: 1.5em;
             font-weight: 600;
         }
+        
+        .sidebar-header p {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+        }
 
         .sidebar-nav ul {
             list-style: none;
@@ -47,7 +53,7 @@
 
         .sidebar-nav a {
             display: block;
-            color: #bdc3c7;
+            color: #fff;
             text-decoration: none;
             padding: 15px;
             margin-bottom: 10px;
@@ -57,17 +63,37 @@
         }
 
         .sidebar-nav a:hover, .sidebar-nav a.active {
-            background-color: #34495e;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #ffb703; /* Cor de destaque */
+        }
+        
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .footer a {
             color: #ffb703;
+            text-decoration: none;
+            font-size: 1em;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: #fb8500;
         }
 
         .main-content {
             flex-grow: 1;
             padding: 40px;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
-            background-color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -77,22 +103,15 @@
         .header h1 {
             margin: 0;
             font-size: 2em;
-            color: #2c3e50;
+            color: #fff;
         }
 
         .content-section {
-            background-color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-
-        .footer {
-            margin-top: auto;
-            text-align: center;
-            padding: 20px;
-            font-size: 0.9em;
-            color: #7f8c8d;
         }
 
         @media (max-width: 768px) {
