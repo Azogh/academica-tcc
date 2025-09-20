@@ -1,0 +1,140 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Gerenciar Históricos{% endblock %}
+
+{% block content %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <a href="{% url 'painel' %}" class="cancel-button">Voltar</a>
+        <h1 style="margin: 0; text-align: center; flex-grow: 1;">Gerenciar Históricos</h1>
+        <a href="#" class="cta-button" id="toggle-upload-form">Importar Histórico</a>
+    </div>
+
+    <div id="upload-form-container" class="content-card" style="display: none; margin-bottom: 20px;">
+        <h2 style="margin-bottom: 20px; font-size: 1.5em; text-align: center;">Fazer Upload de Histórico</h2>
+        <form method="post" enctype="multipart/form-data" action="{% url 'importar_historico_action' %}">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+            <div class="form-buttons" style="justify-content: flex-end;">
+                <button type="submit" class="cta-button">Enviar</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="content-card" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px;">
+            <h2 style="margin: 0; font-size: 1.2em;">Filtros</h2>
+            <a href="#" id="filter-toggle" style="font-size: 1.5em; color: var(--text-color);"><i class="fas fa-filter"></i></a>
+        </div>
+        
+        <div id="filter-container" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: flex-end; gap: 15px; padding-bottom: 20px;">
+            <form method="get" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; flex-grow: 1;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="curso_filter">Curso:</label>
+                    <select name="curso" id="curso_filter">
+                        <option value="">Todos</option>
+                        {% for curso in cursos_disponiveis %}
+                            <option value="{{ curso }}" {% if request.GET.curso == curso %}selected{% endif %}>{{ curso }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="ano_filter">Ano:</label>
+                    <select name="ano" id="ano_filter">
+                        <option value="">Todos</option>
+                        {% for ano in anos_disponiveis %}
+                            <option value="{{ ano }}" {% if request.GET.ano == ano|slugify %}selected{% endif %}>{{ ano }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <button type="submit" class="cta-button">Filtrar</button>
+                    <a href="{% url 'importar_historico' %}" class="cancel-button">Limpar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="content-card" style="margin-top: 20px;">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Matrícula</th>
+                    <th>Nome</th>
+                    <th>Data do Upload</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for historico in historicos %}
+                <tr>
+                    <td>{{ historico.pk }}</td>
+                    <td>{{ historico.aluno.matricula }}</td>
+                    <td>{{ historico.aluno.nome }}</td>
+                    <td>{{ historico.data_upload }}</td>
+                    <td style="display: flex; gap: 10px;">
+                        <a href="{% url 'consultar_historico' historico.pk %}" style="color: var(--accent-color);"><i class="fas fa-search-plus"></i></a>
+                        <a href="{% url 'editar_historico' historico.pk %}" style="color: var(--accent-color);"><i class="fas fa-pen-to-square"></i></a>
+                        <a href="{% url 'excluir_historico' historico.pk %}" style="color: #dc3545;"><i class="fas fa-trash-can"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">Nenhum histórico encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="pagination">
+            <span class="step-links">
+                {% if historicos.has_previous %}
+                    <a href="?page=1">&laquo; primeira</a>
+                    <a href="?page={{ historicos.previous_page_number }}">anterior</a>
+                {% endif %}
+
+                <span class="current">
+                    Página {{ historicos.number }} de {{ historicos.paginator.num_pages }}.
+                </span>
+
+                {% if historicos.has_next %}
+                    <a href="?page={{ historicos.next_page_number }}">próxima</a>
+                    <a href="?page={{ historicos.paginator.num_pages }}">última &raquo;</a>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('toggle-upload-form').addEventListener('click', function(e) {
+            e.preventDefault();
+            const uploadFormContainer = document.getElementById('upload-form-container');
+            if (uploadFormContainer.style.display === 'none' || uploadFormContainer.style.display === '') {
+                uploadFormContainer.style.display = 'block';
+            } else {
+                uploadFormContainer.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('filter-toggle').addEventListener('click', function(e) {
+            e.preventDefault();
+            const filterContainer = document.getElementById('filter-container');
+            const icon = this.querySelector('i');
+            if (filterContainer.style.display === 'none' || filterContainer.style.display === '') {
+                filterContainer.style.display = 'flex';
+                icon.classList.remove('fa-filter');
+                icon.classList.add('fa-times');
+            } else {
+                filterContainer.style.display = 'none';
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-filter');
+            }
+        });
+    </script>
+{% endblock %}
