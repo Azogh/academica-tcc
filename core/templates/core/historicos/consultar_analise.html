@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Consultar Análise{% endblock %}
+{% block page_title %}Consultar Análise{% endblock %}
+
+{% block content %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <a href="{% url 'importar_historico' %}" class="cancel-button">Voltar</a>
+        <h1 style="margin: 0; text-align: center; flex-grow: 1;">Análise de Matrícula</h1>
+        <button type="button" class="cta-button">Confirmar Matrícula</button>
+    </div>
+
+    <div class="content-card">
+        <h2 style="margin-bottom: 20px;">Grade de Horários Sugerida</h2>
+
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Período</th>
+                    <th>Segunda</th>
+                    <th>Terça</th>
+                    <th>Quarta</th>
+                    <th>Quinta</th>
+                    <th>Sexta</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for periodo in periodos %}
+                <tr>
+                    <td>{{ periodo }}</td>
+                    {% for dia in dias_semana %}
+                        <td class="horario-cell" data-dia="{{ dia }}" data-periodo="{{ periodo }}">
+                            {% if grade|get_item:dia|get_item:periodo %}
+                                {{ grade|get_item:dia|get_item:periodo }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div id="substituir-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 100;">
+            <div style="background-color: var(--container-bg); padding: 20px; border-radius: 10px; margin: 10% auto; max-width: 400px;">
+                <h3 style="margin-top: 0;">Substituir Disciplina</h3>
+                <p>Selecione a nova disciplina para o horário de <span id="horario-selecionado"></span>:</p>
+                <form id="substituir-form">
+                    {% csrf_token %}
+                    <select name="nova_disciplina" id="nova_disciplina" style="width: 100%;">
+                        {% for disciplina in disciplinas_disponiveis %}
+                            <option value="{{ disciplina.sigla }}">{{ disciplina.nome }} ({{ disciplina.sigla }})</option>
+                        {% endfor %}
+                    </select>
+                    <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                        <button type="button" id="fechar-modal" class="cancel-button">Cancelar</button>
+                        <button type="submit" class="cta-button">Substituir</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+    
+    <script>
+        document.getElementById('filter-toggle').addEventListener('click', function(e) {
+            e.preventDefault();
+            const filterContainer = document.getElementById('filter-container');
+            const icon = this.querySelector('i');
+            if (filterContainer.style.display === 'none' || filterContainer.style.display === '') {
+                filterContainer.style.display = 'flex';
+                icon.classList.remove('fa-filter');
+                icon.classList.add('fa-times');
+            } else {
+                filterContainer.style.display = 'none';
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-filter');
+            }
+        });
+
+        // Lógica do modal
+        const modal = document.getElementById('substituir-modal');
+        const fecharModalBtn = document.getElementById('fechar-modal');
+        const horarioSelecionadoSpan = document.getElementById('horario-selecionado');
+        const horarioCells = document.querySelectorAll('.horario-cell');
+
+        horarioCells.forEach(cell => {
+            cell.addEventListener('click', function() {
+                const dia = this.dataset.dia;
+                const periodo = this.dataset.periodo;
+                horarioSelecionadoSpan.textContent = `${dia} - ${periodo}`;
+                modal.style.display = 'block';
+            });
+        });
+
+        fecharModalBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    </script>
+{% endblock %}
