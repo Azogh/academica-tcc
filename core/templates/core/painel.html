@@ -1,247 +1,76 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel do Coordenador</title>
+{% extends 'core/base.html' %}
+
+{% block title %}Painel de Controle{% endblock %}
+{% block page_title %}Painel de Controle{% endblock %}
+
+{% block content %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+        <div class="content-card">
+            <canvas id="disciplinasChart"></canvas>
+            <h3 style="text-align: center; margin-top: 15px;">Disciplinas por Matriz Curricular</h3>
+        </div>
+        <div class="content-card">
+            <canvas id="historicosChart"></canvas>
+            <h3 style="text-align: center; margin-top: 15px;">Históricos no Sistema</h3>
+        </div>
+        <div class="content-card">
+            <canvas id="reprovacaoChart"></canvas>
+            <h3 style="text-align: center; margin-top: 15px;">Índice de Reprovação</h3>
+        </div>
+        <div class="content-card">
+            <canvas id="rematriculasChart"></canvas>
+            <h3 style="text-align: center; margin-top: 15px;">Status de Rematrículas</h3>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            background: linear-gradient(to right, #6a11cb, #2575fc); /* Gradiente do tema */
-            color: #fff;
-            min-height: 100vh;
-        }
-
-        .dashboard-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            width: 250px;
-            background-color: rgba(255, 255, 255, 0.1); /* Fundo translúcido */
-            backdrop-filter: blur(10px); /* Efeito vidro fosco */
-            padding: 20px;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease;
-        }
-
-        .sidebar-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .sidebar-header h2 {
-            font-size: 1.5em;
-            font-weight: 600;
-        }
-        
-        .sidebar-header p {
-            font-size: 0.9em;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .sidebar-nav ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .sidebar-nav a {
-            display: block;
-            color: #fff;
-            text-decoration: none;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            font-weight: 400;
-        }
-
-        .sidebar-nav a:hover, .sidebar-nav a.active {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: #ffb703; /* Cor de destaque */
-        }
-        
-        .footer {
-            margin-top: auto;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .footer a {
-            color: #ffb703;
-            text-decoration: none;
-            font-size: 1em;
-            transition: color 0.3s ease;
-        }
-
-        .footer a:hover {
-            color: #fb8500;
-        }
-
-        .main-content {
-            flex-grow: 1;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
-            background-color: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 2em;
-            color: #fff;
-        }
-        
-        .content-section {
-            background-color: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-        }
-
-        .chart-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        @media (max-width: 768px) {
-            .dashboard-container {
-                flex-direction: column;
-            }
-
-            .sidebar {
-                width: 100%;
-                height: auto;
-                padding: 10px 20px;
-                flex-direction: row;
-                justify-content: space-around;
-            }
-            .sidebar-header {
-                display: none;
-            }
-            .sidebar-nav {
-                width: 100%;
-            }
-            .sidebar-nav ul {
-                display: flex;
-                justify-content: space-around;
-                width: 100%;
-            }
-            .sidebar-nav li {
-                flex-grow: 1;
-                text-align: center;
-            }
-            .main-content {
-                padding: 20px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="dashboard-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>Acadêmica</h2>
-                <p>Olá, {{ user.username }}!</p>
-            </div>
-            <nav class="sidebar-nav">
-                <ul>
-                    <li><a href="{% url 'painel' %}" class="active">Dashboard</a></li>
-                    <li><a href="{% url 'listar_matrizes' %}">Gerenciar Matrizes</a></li>
-                    <li><a href="{% url 'listar_disciplinas' %}">Gerenciar Disciplinas</a></li>
-                    <li><a href="{% url 'listar_turmas' %}">Gerenciar Turmas</a></li>
-                    <li><a href="{% url 'listar_horarios' %}">Gerenciar Horários</a></li>
-                    <li><a href="{% url 'logout' %}">Sair</a></li>
-                </ul>
-            </nav>
-            <div class="footer">
-                <a href="#">Desenvolvido por Azogh</a>
-            </div>
-        </aside>
-
-        <main class="main-content">
-            <div class="header">
-                <h1>Painel do Coordenador</h1>
-            </div>
-            
-            <div class="content-section">
-                <h2>Métricas de Matrícula</h2>
-                <div class="chart-container">
-                    <canvas id="statusChart"></canvas>
-                </div>
-            </div>
-
-            <script>
-                const data = {
-                    labels: ['Matriculados', 'Pendentes', 'Finalizados'],
-                    datasets: [{
-                        label: 'Status de Matrículas',
-                        data: [15, 7, 25],
-                        backgroundColor: [
-                            'rgba(255, 183, 3, 0.8)',
-                            'rgba(255, 85, 0, 0.8)',
-                            'rgba(106, 17, 203, 0.8)',
-                        ],
-                        borderColor: [
-                            'rgba(255, 183, 3, 1)',
-                            'rgba(255, 85, 0, 1)',
-                            'rgba(106, 17, 203, 1)',
-                        ],
-                        borderWidth: 1
-                    }]
-                };
-
-                const config = {
-                    type: 'bar',
-                    data: data,
-                    options: {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Requisição para buscar os dados dos gráficos
+            fetch('/chart-data/')
+                .then(response => response.json())
+                .then(data => {
+                    const chartOptions = {
                         responsive: true,
+                        maintainAspectRatio: false,
                         scales: {
                             y: {
                                 beginAtZero: true,
-                                ticks: {
-                                    color: 'rgba(255, 255, 255, 0.8)',
-                                },
+                                ticks: { color: 'rgba(255, 255, 255, 0.8)' }
                             },
                             x: {
-                                ticks: {
-                                    color: 'rgba(255, 255, 255, 0.8)',
-                                },
+                                ticks: { color: 'rgba(255, 255, 255, 0.8)' }
                             }
                         },
                         plugins: {
                             legend: {
-                                labels: {
-                                    color: 'rgba(255, 255, 255, 0.8)',
-                                }
+                                labels: { color: 'rgba(255, 255, 255, 0.8)' }
                             }
                         }
-                    }
-                };
+                    };
 
-                var myChart = new Chart(
-                    document.getElementById('statusChart'),
-                    config
-                );
-            </script>
-        </main>
-    </div>
-</body>
-</html>
+                    new Chart(document.getElementById('disciplinasChart'), {
+                        type: 'bar',
+                        data: data.disciplinas,
+                        options: chartOptions
+                    });
+                    new Chart(document.getElementById('historicosChart'), {
+                        type: 'bar',
+                        data: data.historicos,
+                        options: chartOptions
+                    });
+                    new Chart(document.getElementById('reprovacaoChart'), {
+                        type: 'bar',
+                        data: data.reprovacao,
+                        options: chartOptions
+                    });
+                    new Chart(document.getElementById('rematriculasChart'), {
+                        type: 'bar',
+                        data: data.rematriculas,
+                        options: chartOptions
+                    });
+                })
+                .catch(error => console.error('Erro ao buscar dados dos gráficos:', error));
+        });
+    </script>
+{% endblock %}

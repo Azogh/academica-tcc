@@ -1,5 +1,3 @@
-# No arquivo core/urls.py
-
 from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
@@ -24,7 +22,7 @@ urlpatterns = [
     path('disciplinas/editar/<int:pk>/', views.editar_disciplina, name='editar_disciplina'),
     path('disciplinas/excluir/<int:pk>/', views.excluir_disciplina, name='excluir_disciplina'),
     
-     # URLs para o CRUD de Turmas
+    # URLs para o CRUD de Turmas
     path('turmas/', views.listar_turmas, name='listar_turmas'),
     path('turmas/adicionar/', views.adicionar_turma, name='adicionar_turma'),
     path('turmas/editar/<int:pk>/', views.editar_turma, name='editar_turma'),
@@ -35,4 +33,13 @@ urlpatterns = [
     path('horarios/adicionar/', views.adicionar_horario, name='adicionar_horario'),
     path('horarios/editar/<int:pk>/', views.editar_horario, name='editar_horario'),
     path('horarios/excluir/<int:pk>/', views.excluir_horario, name='excluir_horario'),
+    path('horarios/consultar/', views.consultar_horarios, name='consultar_horarios'),
+    
+    # URLs para o CRUD e Importação de Histórico
+    path('historico/importar/', views.importar_historico, name='importar_historico'),
+    path('historico/upload/', views.importar_historico_action, name='importar_historico_action'),
+    path('historico/consultar/<int:pk>/', views.consultar_historico, name='consultar_historico'),
+    path('historico/editar/<int:pk>/', views.editar_historico, name='editar_historico'),
+    path('historico/excluir/<int:pk>/', views.excluir_historico, name='excluir_historico'),
+    path('historico/analise/', views.consultar_analise, name='consultar_analise'),
 ]

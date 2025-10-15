@@ -1,0 +1,56 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Consultar Histórico{% endblock %}
+
+{% block content %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <a href="{% url 'importar_historico' %}" class="cancel-button">Voltar</a>
+        <h1 style="margin: 0; text-align: center; flex-grow: 1;">Consultar Histórico</h1>
+        <button type="button" class="cta-button">Analisar</button>
+    </div>
+
+    <div class="content-card">
+        <div style="margin-bottom: 30px;">
+            <h2 style="text-align: left; font-size: 1.5em; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px;">Dados do Aluno</h2>
+            <p><strong>Nome:</strong> {{ historico.aluno.nome }}</p>
+            <p><strong>Matrícula:</strong> {{ historico.aluno.matricula }}</p>
+            <p><strong>Curso:</strong> {{ historico.aluno.curso }}</p>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+            <h2 style="text-align: left; font-size: 1.5em; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px;">Disciplinas Cursadas</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Disciplina</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for disciplina in disciplinas_cursadas %}
+                    <tr>
+                        <td>{{ disciplina.disciplina.nome }}</td>
+                        <td>{{ disciplina.get_status_display }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2">Nenhuma disciplina cursada encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div>
+            <h2 style="text-align: left; font-size: 1.5em; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px;">Disciplinas Pendentes</h2>
+            <ul>
+                {% for disciplina in disciplinas_pendentes %}
+                    <li>{{ disciplina.nome }} ({{ disciplina.sigla }})</li>
+                {% empty %}
+                    <li>Nenhuma disciplina pendente encontrada.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}
