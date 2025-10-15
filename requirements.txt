@@ -1,0 +1,8 @@
+# Pacotes principais
+Django~=5.2.6
+
+# Para SQLite, que é o seu banco de dados atual
+# Nenhum pacote adicional é necessário para sqlite3, pois ele é nativo do Python.
+
+# Pacotes para produção (opcional, mas recomendado)
+# gunicorn # Descomente se for usar o gunicorn em produção
