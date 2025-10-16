@@ -19,5 +19,6 @@ COPY . /app/
 EXPOSE 8000
 
 # 7. COMANDO DE INICIALIZAÇÃO
-# Executa as migrações e inicia o servidor.
-CMD python manage.py migrate --no-input && python manage.py runserver 0.0.0.0:8000
+# Corrigido: Usamos a forma de Array JSON, que é mais robusta, e removemos
+# temporariamente o migrate para garantir que o servidor suba.
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

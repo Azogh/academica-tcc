@@ -1,6 +1,9 @@
 # Pacotes principais
 Django~=5.2.6
 
+# Pacote para manipulação de PDF (necessário em core/views.py)
+PyPDF2
+
 # Para SQLite, que é o seu banco de dados atual
 # Nenhum pacote adicional é necessário para sqlite3, pois ele é nativo do Python.
 
