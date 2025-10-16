@@ -92,6 +92,7 @@ class Historico(models.Model):
     disciplina = models.ForeignKey(Disciplinas, on_delete=models.CASCADE)
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    data_upload = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         db_table = 'HISTORICO'
