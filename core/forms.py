@@ -16,6 +16,22 @@ CURSO_CHOICES = [
 
 # Formulário de Cadastro de Coordenador (versão recomendada)
 class CoordenadorCadastroForm(UserCreationForm):
+
+    # Sobrescrevendo o campo 'username' para mudar o label
+    username = forms.CharField(label="Nome de Usuário") 
+    
+    # Sobrescrevendo os campos de senha para mudar os labels
+    password1 = forms.CharField(
+        label="Senha",
+        widget=forms.PasswordInput,
+        help_text=UserCreationForm.base_fields['password2'].help_text
+    )
+    password2 = forms.CharField(
+        label="Confirmação de Senha", # <-- Alterado aqui
+        widget=forms.PasswordInput,
+        help_text=UserCreationForm.base_fields['password2'].help_text
+    )
+    
     class Meta(UserCreationForm.Meta):
         model = Usuario
         fields = UserCreationForm.Meta.fields + ('gestao_inicio', 'portaria',)

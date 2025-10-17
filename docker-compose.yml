@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  web:
+    # Use sua imagem construída.
+    image: academica-tcc:latest 
+    
+    # O diretório de trabalho deve ser /app se for onde o código é copiado/montado.
+    # Se o seu Dockerfile tem "WORKDIR /app", mantenha assim:
+    # working_dir: /app 
+    
+    ports:
+      - "8000:8000"
+      
+    # 1. BIND MOUNT DO CÓDIGO FONTE (PASTA RAIZ)
+    # Mapeia a pasta "academica-tcc" inteira para "/app" no container.
+    # Qualquer alteração que você fizer no forms.py local será refletida.
+    volumes:
+      - /home/agso/Documentos/Workspaces/academica-tcc:/app
+      
+      # 2. PERSISTÊNCIA do BANCO DE DADOS (ARQUIVO SQLite)
+      # Garante que o container use seu arquivo db.sqlite3 local.
+      - /home/agso/Documentos/Workspaces/academica-tcc/db.sqlite3:/app/db.sqlite3
+      
+    command: python manage.py runserver 0.0.0.0:8000
+    
+    restart: always
