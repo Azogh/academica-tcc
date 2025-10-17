@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+
+# Django
+# Arquivos de migração compilados
+*/migrations/__pycache__
+
+# Virtual Environment
+venv/
