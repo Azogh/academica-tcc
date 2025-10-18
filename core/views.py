@@ -4,11 +4,10 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth import views as auth_views
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpRequest
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from django.db.models import Count
-from django.shortcuts import render, redirect, get_object_or_404
 import PyPDF2
 import io
 import re
@@ -312,83 +311,38 @@ def excluir_horario(request, pk):
         return redirect('listar_horarios')
     return render(request, 'core/horarios/excluir_horario.html', {'horario': horario})
 
-# Lógica de processamento do histórico em PDF (Início da implementação)
-def processar_historico_pdf(pdf_file):
+# Lógica de processamento do histórico em PDF (Foco APENAS em Disciplinas)
+def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
     """
-    Função auxiliar para ler o PDF e extrair dados do histórico.
+    Função auxiliar que recebe metadados validados do formulário
+    e foca na extração da tabela de disciplinas do PDF.
     """
     dados_extraidos = {
-        'nome_aluno': '',
-        'matricula': '',
-        'curso': '',
+        'nome_aluno': nome_aluno,  # <-- Preenchido pelo formulário
+        'matricula': matricula,    # <-- Preenchido pelo formulário
+        'curso': curso,            # <-- Preenchido pelo formulário
         'disciplinas': []
     }
 
     try:
+        print("--- DEBUG: 1. Tentando iniciar PyPDF2.PdfReader (APENAS DISC.) ---")
         pdf_reader = PyPDF2.PdfReader(pdf_file)
+        
         full_text = ""
+        # Itera sobre as páginas para extrair todo o texto
         for page in pdf_reader.pages:
             full_text += page.extract_text() or ""
-        
-        # 2. Extração dos Dados do Aluno e Curso (Página 1)
-        
-        # Nome do Aluno
-        nome_match = re.search(r'Nome:\s*(.+?)\s*Data de Nascimento', full_text, re.DOTALL)
-        if nome_match:
-            dados_extraidos['nome_aluno'] = nome_match.group(1).strip()
             
-        # Matrícula
-        matricula_match = re.search(r'Matrícula:\s*(\d+)', full_text)
-        if matricula_match:
-            dados_extraidos['matricula'] = matricula_match.group(1).strip()
-            
-        # Curso
-        # Captura o texto após 'Curso:' e antes de '/CCSSB' para evitar caracteres extras
-        curso_match = re.search(r'Curso:\s*(.+?)/CCSSB', full_text, re.DOTALL)
-        if curso_match:
-            dados_extraidos['curso'] = curso_match.group(1).strip()
-
-
-        # 3. Extração dos Dados das Disciplinas (Páginas 2 e 3)
+        print(f"--- DEBUG: 2. Extração de texto concluída. Tamanho total: {len(full_text)} ---")
         
-        # Regex para encontrar a tabela de disciplinas. 
-        # A tabela começa após "Componentes Curriculares Cursados/Cursando"
-        # e termina antes de "Legenda" ou "Para verificar a autenticidade".
-        # O padrão busca linhas que começam com "Ano/Periodo" (colunas) ou um Código de disciplina (8 dígitos)
+        # 3. Extração dos Dados das Disciplinas (Foco no RegEx)
         
-        # O padrão busca linhas que se parecem com:
-        # "2019.2 08023007 FUNDAMENTOS DE SISTEMAS DE INFORMAÇÃO Dr. CLAITON MARQUES CORREA (36h) 36 36 01 75.0 8,6 8.6 APR"
-        
-        # Busca todas as linhas que contenham um código de 8 dígitos seguido pelo nome da disciplina
-        # e que tenham a coluna "Situação" (APR, REP, etc.) no final.
-        # Este é um RegEx complexo e pode precisar de ajustes finos dependendo da saída do PyPDF2.
-        
-        # Padrão: Ano/Periodo (opcional) + Código (8 dígitos) + Nome da Disciplina + ... + Média + Situação (3-5 letras maiúsculas)
-        
-        # Nota: Como o PyPDF2 mescla as colunas, o mais seguro é buscar por padrões de linhas.
-        
-        # Exemplo de linha bruta:
-        # "2019.2 08023007 FUNDAMENTOS DE SISTEMAS DE INFORMAÇÃO Dr. CLAITON MARQUES CORREA (36h) 36 36 01 75.0 8,6 8.6 APR"
-        
-        # Vamos usar um bloco de texto que contenha a tabela para iterar
-        # Ele começa após 'Componentes Curriculares Cursados/Cursando'
+        # Define os limites para a busca da tabela de disciplinas
         start_index = full_text.find("Componentes Curriculares Cursados/Cursando")
         end_index = full_text.find("Legenda")
         
         if start_index != -1 and end_index != -1:
             tabela_text = full_text[start_index:end_index]
-            
-            # Padrão mais flexível: Ano/Período + Código + Nome da Disciplina + ... + Média + Situação
-            # (\d{4}\.\d)\s* # Ano/Período (Ex: 2019.2) - Opcional, pois algumas linhas não têm
-            # (\d{8}) # Código da Disciplina (Ex: 08023007)
-            # (.+?) # Nome e Docente (Captura tudo que vier depois, non-greedy)
-            # (\d{2,3})\s*(\d{2,3}) # CH e Carga Horária (duas colunas)
-            # ([\d\.\,]+\s*) # Média (Ex: 8.6 ou 7,5)
-            # (APR|REP|REPMF|CANC|DISP|MATR) # Situação (o mais importante)
-            
-            # Simplificação: Focar em Código, Nome e Situação no final
-            # O PyPDF2 torna a extração de colunas muito difícil. Focaremos no código, nome e situação.
-            # O bloco regex busca um código de disciplina, um nome (greedy) e uma situação conhecida no final.
             
             # Padrão: Código (8d) + Nome (tudo até...)+ CH/Carga Horária + ... + Situação
             disciplina_regex = re.compile(
@@ -402,16 +356,11 @@ def processar_historico_pdf(pdf_file):
                 situacao = match.group(7).strip()
                 media = (match.group(6) or '').strip()
                 
-                # O nome bruto contém o nome do professor. Precisamos separar:
+                # Limpa o Nome (Removendo Dr., MSc., e horas)
                 nome = re.sub(r'Dr\.\s*.+\(|\s*MSC\.\s*.+\(|\s*MSc\.\s*.+\(|\s*Professor\s*.+\(|\(\d{2,3}h\)|e\s*|\n', '', nome_bruto).strip()
                 
-                # A lógica de extração da CH e Média é mais propensa a erro devido ao formato.
-                # Para iniciar, vamos pegar apenas o essencial:
-                
-                # Filtrar linhas que são apenas a linha de cabeçalho ou extras
                 if nome and len(nome) > 5 and 'Componente Curricular' not in nome:
                     
-                    # Vamos tentar extrair a carga horária da string bruta se existir
                     ch_match = re.search(r'(\d{2,3})h', nome_bruto)
                     ch = ch_match.group(1) if ch_match else ''
                     
@@ -422,18 +371,21 @@ def processar_historico_pdf(pdf_file):
                         'media': media.replace(',', '.') if media else '',
                         'situacao': situacao
                     })
+            
+            print(f"--- DEBUG: 3. Disciplinas extraídas: {len(dados_extraidos['disciplinas'])} ---")
 
     except PyPDF2.errors.PdfReadError:
-        print("Erro: O arquivo PDF está corrompido ou protegido por senha.")
+        print("!!! ERRO FATAL: O arquivo PDF está corrompido ou protegido por senha. !!!")
         return None
     except Exception as e:
-        print(f"Erro inesperado durante o processamento do PDF: {e}")
+        print(f"!!! ERRO INESPERADO DURANTE O PROCESSAMENTO DO PDF: {e} !!!")
         return None
     
+    print("--- DEBUG: 4. FIM DO PROCESSAMENTO DE DISC. ---")
     return dados_extraidos
 
 
-# View para lidar com o upload e o processamento
+# View para lidar com o upload e o processamento (Atualizada para aceitar input manual)
 @login_required
 def importar_historico(request):
     historicos_importados = Historico.objects.all().order_by('-data_upload')
@@ -459,73 +411,42 @@ def importar_historico(request):
     })
 
 @login_required
-def importar_historico_action(request):
+def importar_historico_action(request: HttpRequest):
+    print("\n--- INÍCIO DA REQUISIÇÃO IMPORTAR_HISTORICO_ACTION ---")
     if request.method == 'POST':
-        # Instancia o formulário, passando POST data E ARQUIVOS (request.FILES)
+        # Instancia o formulário, assumindo que ele já inclui os campos de texto
         form = HistoricoUploadForm(request.POST, request.FILES)
         
         if form.is_valid():
-            # O nome do campo do arquivo no formulário deve ser 'pdf_file'
-            # Usamos .get() para evitar KeyErrors se o arquivo não vier por algum motivo
+            # Captura dados do formulário
             pdf_file = request.FILES.get('pdf_file') 
+            nome_aluno = form.cleaned_data.get('nome_completo')
+            matricula = form.cleaned_data.get('matricula')
+            curso = form.cleaned_data.get('curso')
             
-            if not pdf_file:
-                # Este caso só deve ocorrer se houver um problema estranho no frontend
-                return JsonResponse({"erro": "Nenhum arquivo 'pdf_file' encontrado na requisição."}, status=400)
+            # Validação: Garante que todos os campos obrigatórios foram preenchidos
+            if not pdf_file or not nome_aluno or not matricula or not curso:
+                print("!!! ERRO: Arquivo PDF ou campos de texto obrigatórios faltando !!!")
+                return JsonResponse({"erro": "Nenhum arquivo ou dados obrigatórios (Nome, Matrícula, Curso) foram enviados."}, status=400)
             
-            # Chama a função de processamento
-            dados = processar_historico_pdf(pdf_file)
+            # Chama a função de processamento, passando os metadados chave
+            dados = processar_historico_pdf(pdf_file, nome_aluno, matricula, curso)
             
             if dados is not None:
-                # Retorna o JSON com os dados (mesmo que ainda vazios pelo seu TODO)
+                print("--- SUCESSO: Dados processados e retornando JsonResponse ---")
                 return JsonResponse(dados, status=200)
             else:
-                # Caso a função processar_historico_pdf retorne None (erro interno no PDF)
-                # Você pode usar um JsonResponse para APIs ou render para um fluxo de formulário tradicional.
-                return JsonResponse({"erro": "Falha ao processar o arquivo PDF. Verifique o console para mais detalhes."}, status=500)
+                print("!!! FALHA: processar_historico_pdf retornou None (erro interno) !!!")
+                return JsonResponse({"erro": "Falha ao processar o arquivo PDF. Consulte logs no terminal."}, status=500)
         else:
-            # Se o formulário não for válido (ex: erro no tipo de arquivo, limite de tamanho)
             erros = form.errors.as_json()
+            print(f"!!! ERRO DE FORMULÁRIO: {erros} !!!")
             return JsonResponse({"erro": "Dados inválidos", "detalhes": erros}, status=400)
             
-    # Se não for POST, redireciona para a página de importação
+    print("--- REDIRECIONANDO: Não é POST ---")
     return redirect('importar_historico')
 
-@login_required
-def consultar_historico(request, pk):
-    historico = get_object_or_404(Historico, pk=pk)
-    disciplinas_cursadas = Historico.objects.filter(aluno=historico.aluno)
-    
-    disciplinas_pendentes = [
-        {'nome': 'Estrutura de Dados II', 'sigla': 'ED2'},
-        {'nome': 'Sistemas Distribuídos', 'sigla': 'SD'},
-    ]
-
-    return render(request, 'core/historicos/consultar_historico.html', {
-        'historico': historico,
-        'disciplinas_cursadas': disciplinas_cursadas,
-        'disciplinas_pendentes': disciplinas_pendentes,
-    })
-
-@login_required
-def editar_historico(request, pk):
-    # Lógica de edição (placeholder)
-    historico = get_object_or_404(Historico, pk=pk)
-    return render(request, 'core/historicos/editar_historico.html', {'historico': historico})
-
-@login_required
-def excluir_historico(request, pk):
-    # Lógica de exclusão (placeholder)
-    historico = get_object_or_404(Historico, pk=pk)
-    return render(request, 'core/historicos/excluir_historico.html', {'historico': historico})
-
-@login_required
-def consultar_analise(request):
-    # Lógica de análise (placeholder)
-    return render(request, 'core/historicos/consultar_analise.html', {})
-
-
-# Nova view para consulta de horários
+# Views para o CRUD de Horários
 @login_required
 def consultar_horarios(request):
     horarios_list = Horario.objects.all()
@@ -576,7 +497,7 @@ def chart_data_view(request):
 
     reprovacao_data = {
         'labels': ['Lab. BD', 'Estrutura de Dados', 'Redes de Comp.'],
-        'datasets': [{'label': 'Reprovação (%)', 'data': [25, 45, 15]}]
+        'datasets': [{'label': 'Reprovacão (%)', 'data': [25, 45, 15]}]
     }
     
     rematriculas_data = {
@@ -590,3 +511,37 @@ def chart_data_view(request):
         'reprovacao': reprovacao_data,
         'rematriculas': rematriculas_data
     })
+    
+# Omiti as views: consultar_historico, editar_historico, excluir_historico e consultar_analise
+# para manter o foco na lógica principal, mas mantendo a organização original.
+# Se precisar delas novamente:
+
+@login_required
+def consultar_historico(request, pk):
+    historico = get_object_or_404(Historico, pk=pk)
+    disciplinas_cursadas = Historico.objects.filter(aluno=historico.aluno)
+    
+    disciplinas_pendentes = [
+        {'nome': 'Estrutura de Dados II', 'sigla': 'ED2'},
+        {'nome': 'Sistemas Distribuídos', 'sigla': 'SD'},
+    ]
+
+    return render(request, 'core/historicos/consultar_historico.html', {
+        'historico': historico,
+        'disciplinas_cursadas': disciplinas_cursadas,
+        'disciplinas_pendentes': disciplinas_pendentes,
+    })
+
+@login_required
+def editar_historico(request, pk):
+    historico = get_object_or_404(Historico, pk=pk)
+    return render(request, 'core/historicos/editar_historico.html', {'historico': historico})
+
+@login_required
+def excluir_historico(request, pk):
+    historico = get_object_or_404(Historico, pk=pk)
+    return render(request, 'core/historicos/excluir_historico.html', {'historico': historico})
+
+@login_required
+def consultar_analise(request):
+    return render(request, 'core/historicos/consultar_analise.html', {})
