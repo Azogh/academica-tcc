@@ -17,6 +17,13 @@ CURSO_CHOICES = [
 # Formulário de Cadastro de Coordenador (versão recomendada)
 class CoordenadorCadastroForm(UserCreationForm):
 
+    gestao_inicio = forms.IntegerField(
+        label="Gestão Início (Ano)",
+        required=False,
+        min_value=1900,
+        max_value=2100,
+        widget=forms.NumberInput(attrs={'placeholder': 'Ex: 2025'})
+    )
     # Sobrescrevendo o campo 'username' para mudar o label
     username = forms.CharField(label="Nome de Usuário") 
     
