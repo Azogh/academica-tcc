@@ -66,4 +66,17 @@ class HorarioForm(forms.ModelForm):
 
 # Formulário para Upload de Histórico
 class HistoricoUploadForm(forms.Form):
-    pdf_file = forms.FileField(label='Selecione o arquivo PDF')
+    # Campos de texto para dados do aluno
+    nome_aluno = forms.CharField(label='Nome Completo', max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'Nome do estudante'}))
+    matricula = forms.CharField(label='Matrícula', max_length=10, required=True, widget=forms.TextInput(attrs={'placeholder': 'Número da matrícula'}))
+    
+    # Campo de seleção para Curso (usando a lista existente)
+    curso = forms.ChoiceField(choices=[('', 'Selecione o Curso')] + CURSO_CHOICES, label='Curso', required=True)
+    
+    # Campo de arquivo para o PDF
+    pdf_file = forms.FileField(
+        label='Escolher Arquivo PDF', 
+        required=True, 
+        widget=forms.FileInput(attrs={'style': 'display: none;'})
+    )
+    
