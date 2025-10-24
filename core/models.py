@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 
 # Modelo USUARIO (Tabela USUARIO)
 class Usuario(AbstractUser):
-    gestao_inicio = models.DateField(null=True, blank=True)
+    gestao_inicio = models.IntegerField(null=True, blank=True)
     portaria = models.CharField(max_length=15, null=True, blank=True)
 
     # Adicione estes argumentos para resolver o conflito de nomes
