@@ -312,64 +312,56 @@ def excluir_horario(request, pk):
         return redirect('listar_horarios')
     return render(request, 'core/horarios/excluir_horario.html', {'horario': horario})
 
-# Lógica de processamento do histórico em PDF (Início da implementação)
+# Lógica de processamento do histórico em PDF (AGORA SEM EXTRAÇÃO DE DADOS DO ALUNO)
 def processar_historico_pdf(pdf_file):
     """
     Função auxiliar para ler o PDF e extrair dados do histórico, 
     focando em Código, Nome da Disciplina e Situação (Status).
     """
     dados_extraidos = {
-        # As chaves de nome_aluno, matricula, curso foram removidas/não são necessárias aqui, 
-        # pois serão adicionadas a partir do formulário na função importar_historico_action.
-        'disciplinas': []
+        'disciplinas': [] # APENAS AS DISCIPLINAS SÃO EXTRAÍDAS
     }
 
     try:
-        # Lê o PDF
         pdf_reader = PyPDF2.PdfReader(pdf_file)
         full_text = ""
         for page in pdf_reader.pages:
             full_text += page.extract_text() or ""
         
-        # 1. Extração dos Dados do Aluno e Curso (Lógica removida/omintida)
+        # 1. Extração dos Componentes Curriculares Cursados/Cursando (Páginas 2 em diante)
         
-        # 2. Extração dos Componentes Curriculares Cursados/Cursando (Páginas 2 e 3)
-        
-        # Define os limites do bloco de texto que contém as tabelas de componentes curriculares cursados
         start_index = full_text.find("Componentes Curriculares Cursados/Cursando")
-        end_index = full_text.find("Legenda") # A legenda está após as tabelas de notas
+        end_index = full_text.find("Legenda")
         
         if start_index != -1 and end_index != -1:
-            # Captura apenas o bloco de texto da tabela de disciplinas
             tabela_text = full_text[start_index:end_index]
             
-            # Padrões de Status (Situação)
-            SITUACOES = r'(APR|REP|REPF|REPMF|CANC|DISP|MATR|CUMP)'
-            
-            # Regex para encontrar: Código (8 dígitos) + Nome da Disciplina e dados brutos + Status
+            # Regex para encontrar: Código (8d) + Nome (tudo até...)+ CH/Carga Horária + ... + Situação
             disciplina_regex = re.compile(
-                r'(\d{8})\s*(.+?)\s*' + SITUACOES, 
+                r'(\d{8})\s*(.+?)\s*(\d{2,3})\s*(\d{2,3})\s*(\d{2})\s*([\d\.\,]+\s*)*([\d\.\,]+\s*)*(APR|REP|REPMF|CANC|DISP|MATR|CUMP)', 
                 re.DOTALL
             )
             
             for match in disciplina_regex.finditer(tabela_text):
                 codigo = match.group(1).strip()
-                nome_bruto_dados = match.group(2).strip()
-                situacao = match.group(3).strip().upper()
+                nome_bruto = match.group(2).strip()
+                situacao = match.group(7).strip()
+                media = (match.group(6) or '').strip()
                 
-                # Limpeza do nome da disciplina:
-                # 1. Remove nome do professor e carga horária entre parênteses
-                nome = re.sub(r'Dr\.\s*.+\(|\s*MSC\.\s*.+\(|\s*MSc\.\s*.+\(|\s*Professor\s*.+\(|\(\d{2,3}h\)|e\s*|\n', '', nome_bruto_dados).strip()
+                # Limpa o nome da disciplina removendo informações do professor e quebras de linha
+                nome = re.sub(r'Dr\.\s*.+\(|\s*MSC\.\s*.+\(|\s*MSc\.\s*.+\(|\s*Professor\s*.+\(|\(\d{2,3}h\)|e\s*|\n', '', nome_bruto).strip()
                 
-                # 2. Remove notas, frequências, médias e a coluna da turma que foram mescladas (Sequências numéricas)
-                nome = re.sub(r'[\d\.\,]+\s*(\d{2,3})?\s*$', '', nome).strip()
-                
-                # 3. Filtra e adiciona se for um nome de disciplina válido
+                # Filtra e adiciona se for um nome de disciplina válido
                 if nome and len(nome) > 5 and 'Componente Curricular' not in nome:
+                    
+                    ch_match = re.search(r'(\d{2,3})h', nome_bruto)
+                    ch = ch_match.group(1) if ch_match else ''
                     
                     dados_extraidos['disciplinas'].append({
                         'codigo': codigo,
                         'nome': nome,
+                        'carga_horaria': ch,
+                        'media': media.replace(',', '.') if media else '',
                         'situacao': situacao
                     })
 
@@ -383,7 +375,7 @@ def processar_historico_pdf(pdf_file):
     return dados_extraidos
 
 
-# View para lidar com o upload e o processamento
+# View para lidar com o upload, processamento, SALVAR NO DB e REDIRECIONAR
 @login_required
 def importar_historico(request):
     historicos_importados = Historico.objects.all().order_by('-data_upload')
@@ -411,53 +403,103 @@ def importar_historico(request):
 @login_required
 def importar_historico_action(request):
     if request.method == 'POST':
-        # Instancia o formulário, passando POST data E ARQUIVOS (request.FILES)
         form = HistoricoUploadForm(request.POST, request.FILES)
         
         if form.is_valid():
-            # Capturando os dados do formulário
+            # 1. Capturar dados do formulário (Aluno)
             nome_aluno = form.cleaned_data['nome_aluno']
             matricula = form.cleaned_data['matricula']
             curso = form.cleaned_data['curso']
-            pdf_file = form.cleaned_data['pdf_file'] 
+            pdf_file = request.FILES.get('pdf_file') 
             
             if not pdf_file:
-                return JsonResponse({"erro": "Nenhum arquivo 'pdf_file' encontrado na requisição."}, status=400)
-            
-            # TODO: O próximo passo será criar ou obter o objeto Aluno aqui
-            # Exemplo de lógica para o futuro:
-            # aluno, created = Aluno.objects.get_or_create(
-            #     matricula=matricula,
-            #     defaults={'nome': nome_aluno, 'curso': curso}
-            # )
-            
-            # Chama a função de processamento
+                return redirect('importar_historico')
+
+            # 2. Processar o PDF para obter as disciplinas
             dados = processar_historico_pdf(pdf_file)
             
-            if dados is not None:
-                # Adiciona os dados do aluno fornecidos no form ao resultado para referência
-                dados['nome_aluno_input'] = nome_aluno
-                dados['matricula_input'] = matricula
-                dados['curso_input'] = curso
-                
-                # TODO: Aqui deve vir a lógica de salvar o Historico, Disciplinas, etc.
-                
-                # Por enquanto, retorna os dados processados + os dados de input
-                return JsonResponse(dados, status=200)
+            # 3. Lógica de Salvamento e Redirecionamento
+            if dados is not None and dados['disciplinas']:
+                try:
+                    # Cria ou obtém o Aluno
+                    aluno, created = Aluno.objects.get_or_create(
+                        matricula=matricula,
+                        defaults={'nome': nome_aluno, 'curso': curso}
+                    )
+                    
+                    # Atualiza dados se necessário
+                    if not created:
+                        aluno.nome = nome_aluno
+                        aluno.curso = curso
+                        aluno.save()
+
+                    # Limpar históricos anteriores (substituição completa)
+                    Historico.objects.filter(aluno=aluno).delete()
+                    
+                    # Pré-busca as disciplinas da Matriz (para otimização)
+                    # Usa 'codigo' como campo de busca.
+                    disciplinas_existentes = Disciplinas.objects.all().in_bulk(field_name='codigo')
+                    
+                    historicos_a_criar = []
+                    
+                    for disc_data in dados['disciplinas']:
+                        # Tenta obter a disciplina cadastrada
+                        disciplina_obj = disciplinas_existentes.get(disc_data['codigo']) 
+                        
+                        if disciplina_obj:
+                            historicos_a_criar.append(
+                                Historico(
+                                    status=disc_data['situacao'],
+                                    disciplina=disciplina_obj,
+                                    aluno=aluno,
+                                    usuario=request.user,
+                                )
+                            )
+                    
+                    # Salva em massa os novos registros (melhor performance)
+                    Historico.objects.bulk_create(historicos_a_criar)
+                    
+                    
+                    # 4. REDIRECIONAR para a visualização do histórico do aluno
+                    return redirect('consultar_historico', pk=aluno.pk)
+
+                except Exception as e:
+                    # Em caso de erro no DB
+                    print(f"Erro ao salvar dados no BD: {e}")
+                    return redirect('importar_historico')
+
             else:
-                return JsonResponse({"erro": "Falha ao processar o arquivo PDF. Verifique o console para mais detalhes."}, status=500)
+                # PDF processado, mas sem disciplinas ou erro no processamento
+                return redirect('importar_historico')
         else:
-            # Se o formulário não for válido, retorna um erro JSON (assumindo chamada AJAX)
-            erros = form.errors.as_json()
-            return JsonResponse({"erro": "Dados inválidos", "detalhes": erros}, status=400)
+            # Formulário inválido (erros de campo)
+            historicos_importados = Historico.objects.all().order_by('-data_upload')
             
-    # Se não for POST, redireciona para a página de importação
+            paginator = Paginator(historicos_importados, 10)
+            page = request.GET.get('page')
+            try:
+                historicos = paginator.page(page)
+            except:
+                historicos = []
+
+            cursos_disponiveis = MatrizCurricular.objects.values_list('curso', flat=True).distinct()
+            anos_disponiveis = Turma.objects.values_list('ano_ingresso', flat=True).distinct()
+
+            return render(request, 'core/historicos/importar_historico.html', {
+                'historicos': historicos,
+                'cursos_disponiveis': cursos_disponiveis,
+                'anos_disponiveis': anos_disponiveis,
+                'form': form, # Retorna o form com os erros
+            })
+            
+    # Se não for POST, redireciona
     return redirect('importar_historico')
 
 @login_required
 def consultar_historico(request, pk):
-    historico = get_object_or_404(Historico, pk=pk)
-    disciplinas_cursadas = Historico.objects.filter(aluno=historico.aluno)
+    # NOTA: O 'pk' agora é o PK do Aluno para buscar o histórico completo
+    aluno = get_object_or_404(Aluno, pk=pk)
+    disciplinas_cursadas = Historico.objects.filter(aluno=aluno).select_related('disciplina')
     
     disciplinas_pendentes = [
         {'nome': 'Estrutura de Dados II', 'sigla': 'ED2'},
@@ -465,7 +507,7 @@ def consultar_historico(request, pk):
     ]
 
     return render(request, 'core/historicos/consultar_historico.html', {
-        'historico': historico,
+        'aluno': aluno,
         'disciplinas_cursadas': disciplinas_cursadas,
         'disciplinas_pendentes': disciplinas_pendentes,
     })
@@ -539,7 +581,7 @@ def chart_data_view(request):
 
     reprovacao_data = {
         'labels': ['Lab. BD', 'Estrutura de Dados', 'Redes de Comp.'],
-        'datasets': [{'label': 'Reprovação (%)', 'data': [25, 45, 15]}]
+        'datasets': [{'label': 'Reprovacao (%)', 'data': [25, 45, 15]}]
     }
     
     rematriculas_data = {
