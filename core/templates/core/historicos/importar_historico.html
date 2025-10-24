@@ -1,31 +1,87 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Gerenciar Históricos{% endblock %}
+{% block title %}Importar Histórico{% endblock %}
+
 
 {% block content %}
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <a href="{% url 'painel' %}" class="cancel-button">Voltar</a>
-        <h1 style="margin: 0; text-align: center; flex-grow: 1;">Gerenciar Históricos</h1>
+        <h1 style="margin: 0; text-align: center; flex-grow: 1;">Importar Histórico</h1>
         <a href="#" class="cta-button" id="toggle-upload-form">Importar Histórico</a>
     </div>
 
     <div id="upload-form-container" class="content-card" style="display: none; margin-bottom: 20px;">
-        <h2 style="margin-bottom: 20px; font-size: 1.5em; text-align: center;">Fazer Upload de Histórico</h2>
+        <h2 style="margin-bottom: 20px; font-size: 1.5em; text-align: center;">Análise de Histórico</h2>
+        <p style="text-align: center; color: rgba(255, 255, 255, 0.7); margin-top: -10px; margin-bottom: 30px;">
+            Upload do histórico para gerar recomendações de matérias
+        </p>
+
         <form method="post" enctype="multipart/form-data" action="{% url 'importar_historico_action' %}">
             {% csrf_token %}
-            {% for field in form %}
-            <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
+            
+            <div style="margin-bottom: 30px; padding: 20px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                <h3 style="margin-top: 0; font-size: 1.2em; color: #ffb703;"><i class="fas fa-id-card"></i> Informações do Estudante</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="form-group">
+                        <label for="{{ form.nome_aluno.id_for_label }}">{{ form.nome_aluno.label }} *</label>
+                        {{ form.nome_aluno }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.matricula.id_for_label }}">{{ form.matricula.label }} *</label>
+                        {{ form.matricula }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.curso.id_for_label }}">{{ form.curso.label }} *</label>
+                        {{ form.curso }}
+                    </div>
+                </div>
             </div>
-            {% endfor %}
-            <div class="form-buttons" style="justify-content: flex-end;">
-                <button type="submit" class="cta-button">Enviar</button>
+
+            <div style="margin-bottom: 30px; padding: 20px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.2);">
+                <h3 style="margin-top: 0; font-size: 1.2em; color: #ffb703;"><i class="fas fa-file-upload"></i> Upload do Histórico</h3>
+                
+                <div class="form-group" style="text-align: center; border: 2px dashed rgba(255, 255, 255, 0.3); padding: 30px; border-radius: 10px;">
+                    <i class="fas fa-file-pdf" style="font-size: 3em; color: rgba(255, 255, 255, 0.5); margin-bottom: 15px;"></i>
+                    <p style="margin: 0 0 10px 0;">Arraste e solte o arquivo PDF aqui ou clique para selecionar</p>
+                    
+                    {{ form.pdf_file }}
+                    
+                    <label for="{{ form.pdf_file.id_for_label }}" class="cta-button" style="display: inline-block; padding: 10px 20px; margin-top: 10px;">
+                        {{ form.pdf_file.label }}
+                    </label>
+                    
+                    <p style="font-size: 0.8em; color: rgba(255, 255, 255, 0.5); margin-top: 10px;">Suporta apenas arquivos PDF • Tamanho máximo: 10MB</p>
+
+                    {% if form.pdf_file.errors %}
+                        <ul class="errorlist" style="color: #dc3545; list-style: none; padding: 0; margin-top: 10px;">
+                            {% for error in form.pdf_file.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                
+                {% for field in form %}
+                    {% if field.name != 'nome_aluno' and field.name != 'matricula' and field.name != 'curso' and field.name != 'pdf_file' %}
+                        {% if field.errors %}
+                            <ul class="errorlist" style="color: #dc3545; list-style: none; padding: 0; margin-top: 10px;">
+                                {% for error in field.errors %}
+                                    <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="form-buttons" style="justify-content: center;">
+                <button type="submit" class="cta-button" style="width: 100%;">Analisar Histórico</button>
             </div>
         </form>
     </div>
-
+    
     <div class="content-card" style="margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px;">
             <h2 style="margin: 0; font-size: 1.2em;">Filtros</h2>

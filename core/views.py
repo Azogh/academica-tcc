@@ -314,6 +314,7 @@ def excluir_horario(request, pk):
 # Lógica de processamento do histórico em PDF (Foco APENAS em Disciplinas)
 def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
     """
+<<<<<<< HEAD
     Função auxiliar que recebe metadados validados do formulário
     e foca na extração da tabela de disciplinas do PDF.
     """
@@ -321,11 +322,23 @@ def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
         'nome_aluno': nome_aluno,  # <-- Preenchido pelo formulário
         'matricula': matricula,    # <-- Preenchido pelo formulário
         'curso': curso,            # <-- Preenchido pelo formulário
+=======
+    Função auxiliar para ler o PDF e extrair dados do histórico, 
+    focando em Código, Nome da Disciplina e Situação (Status).
+    """
+    dados_extraidos = {
+        # As chaves de nome_aluno, matricula, curso foram removidas/não são necessárias aqui, 
+        # pois serão adicionadas a partir do formulário na função importar_historico_action.
+>>>>>>> 345c00d (feat: Implementa campos de nome/matricula/curso no upload de histórico e refatora extracao de PDF)
         'disciplinas': []
     }
 
     try:
+<<<<<<< HEAD
         print("--- DEBUG: 1. Tentando iniciar PyPDF2.PdfReader (APENAS DISC.) ---")
+=======
+        # Lê o PDF
+>>>>>>> 345c00d (feat: Implementa campos de nome/matricula/curso no upload de histórico e refatora extracao de PDF)
         pdf_reader = PyPDF2.PdfReader(pdf_file)
         
         full_text = ""
@@ -336,31 +349,19 @@ def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
         print(f"--- DEBUG: 2. Extração de texto concluída. Tamanho total: {len(full_text)} ---")
         
 <<<<<<< HEAD
+<<<<<<< HEAD
         # 3. Extração dos Dados das Disciplinas (Foco no RegEx)
         
         # Define os limites para a busca da tabela de disciplinas
 =======
         # 2. Extração dos Dados do Aluno e Curso (Página 1)
+=======
+        # 1. Extração dos Dados do Aluno e Curso (Lógica removida/omintida)
+>>>>>>> 345c00d (feat: Implementa campos de nome/matricula/curso no upload de histórico e refatora extracao de PDF)
         
-        # Nome do Aluno
-        nome_match = re.search(r'Nome:\s*(.+?)\s*Data de Nascimento', full_text, re.DOTALL)
-        if nome_match:
-            dados_extraidos['nome_aluno'] = nome_match.group(1).strip()
-            
-        # Matrícula
-        matricula_match = re.search(r'Matrícula:\s*(\d+)', full_text)
-        if matricula_match:
-            dados_extraidos['matricula'] = matricula_match.group(1).strip()
-            
-        # Curso
-        # Captura o texto após 'Curso:' e antes de '/CCSSB' para evitar caracteres extras
-        curso_match = re.search(r'Curso:\s*(.+?)/CCSSB', full_text, re.DOTALL)
-        if curso_match:
-            dados_extraidos['curso'] = curso_match.group(1).strip()
-
-
-        # 3. Extração dos Dados das Disciplinas (Páginas 2 e 3)
+        # 2. Extração dos Componentes Curriculares Cursados/Cursando (Páginas 2 e 3)
         
+<<<<<<< HEAD
         # Regex para encontrar a tabela de disciplinas. 
         # A tabela começa após "Componentes Curriculares Cursados/Cursando"
         # e termina antes de "Legenda" ou "Para verificar a autenticidade".
@@ -383,12 +384,17 @@ def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
         # Vamos usar um bloco de texto que contenha a tabela para iterar
         # Ele começa após 'Componentes Curriculares Cursados/Cursando'
 >>>>>>> 702790a (atualização)
+=======
+        # Define os limites do bloco de texto que contém as tabelas de componentes curriculares cursados
+>>>>>>> 345c00d (feat: Implementa campos de nome/matricula/curso no upload de histórico e refatora extracao de PDF)
         start_index = full_text.find("Componentes Curriculares Cursados/Cursando")
-        end_index = full_text.find("Legenda")
+        end_index = full_text.find("Legenda") # A legenda está após as tabelas de notas
         
         if start_index != -1 and end_index != -1:
+            # Captura apenas o bloco de texto da tabela de disciplinas
             tabela_text = full_text[start_index:end_index]
             
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
             # Padrão mais flexível: Ano/Período + Código + Nome da Disciplina + ... + Média + Situação
@@ -405,17 +411,23 @@ def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
             
 >>>>>>> 702790a (atualização)
             # Padrão: Código (8d) + Nome (tudo até...)+ CH/Carga Horária + ... + Situação
+=======
+            # Padrões de Status (Situação)
+            SITUACOES = r'(APR|REP|REPF|REPMF|CANC|DISP|MATR|CUMP)'
+            
+            # Regex para encontrar: Código (8 dígitos) + Nome da Disciplina e dados brutos + Status
+>>>>>>> 345c00d (feat: Implementa campos de nome/matricula/curso no upload de histórico e refatora extracao de PDF)
             disciplina_regex = re.compile(
-                r'(\d{8})\s*(.+?)\s*(\d{2,3})\s*(\d{2,3})\s*(\d{2})\s*([\d\.\,]+\s*)*([\d\.\,]+\s*)*(APR|REP|REPMF|CANC|DISP|MATR|CUMP)', 
+                r'(\d{8})\s*(.+?)\s*' + SITUACOES, 
                 re.DOTALL
             )
             
             for match in disciplina_regex.finditer(tabela_text):
                 codigo = match.group(1).strip()
-                nome_bruto = match.group(2).strip()
-                situacao = match.group(7).strip()
-                media = (match.group(6) or '').strip()
+                nome_bruto_dados = match.group(2).strip()
+                situacao = match.group(3).strip().upper()
                 
+<<<<<<< HEAD
 <<<<<<< HEAD
                 # Limpa o Nome (Removendo Dr., MSc., e horas)
                 nome = re.sub(r'Dr\.\s*.+\(|\s*MSC\.\s*.+\(|\s*MSc\.\s*.+\(|\s*Professor\s*.+\(|\(\d{2,3}h\)|e\s*|\n', '', nome_bruto).strip()
@@ -425,23 +437,29 @@ def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
 =======
                 # O nome bruto contém o nome do professor. Precisamos separar:
                 nome = re.sub(r'Dr\.\s*.+\(|\s*MSC\.\s*.+\(|\s*MSc\.\s*.+\(|\s*Professor\s*.+\(|\(\d{2,3}h\)|e\s*|\n', '', nome_bruto).strip()
+=======
+                # Limpeza do nome da disciplina:
+                # 1. Remove nome do professor e carga horária entre parênteses
+                nome = re.sub(r'Dr\.\s*.+\(|\s*MSC\.\s*.+\(|\s*MSc\.\s*.+\(|\s*Professor\s*.+\(|\(\d{2,3}h\)|e\s*|\n', '', nome_bruto_dados).strip()
+>>>>>>> 345c00d (feat: Implementa campos de nome/matricula/curso no upload de histórico e refatora extracao de PDF)
                 
-                # A lógica de extração da CH e Média é mais propensa a erro devido ao formato.
-                # Para iniciar, vamos pegar apenas o essencial:
+                # 2. Remove notas, frequências, médias e a coluna da turma que foram mescladas (Sequências numéricas)
+                nome = re.sub(r'[\d\.\,]+\s*(\d{2,3})?\s*$', '', nome).strip()
                 
-                # Filtrar linhas que são apenas a linha de cabeçalho ou extras
+                # 3. Filtra e adiciona se for um nome de disciplina válido
                 if nome and len(nome) > 5 and 'Componente Curricular' not in nome:
                     
+<<<<<<< HEAD
                     # Vamos tentar extrair a carga horária da string bruta se existir
 >>>>>>> 702790a (atualização)
                     ch_match = re.search(r'(\d{2,3})h', nome_bruto)
                     ch = ch_match.group(1) if ch_match else ''
                     
+=======
+>>>>>>> 345c00d (feat: Implementa campos de nome/matricula/curso no upload de histórico e refatora extracao de PDF)
                     dados_extraidos['disciplinas'].append({
                         'codigo': codigo,
                         'nome': nome,
-                        'carga_horaria': ch,
-                        'media': media.replace(',', '.') if media else '',
                         'situacao': situacao
                     })
 <<<<<<< HEAD
@@ -532,26 +550,39 @@ def importar_historico_action(request: HttpRequest):
         form = HistoricoUploadForm(request.POST, request.FILES)
         
         if form.is_valid():
-            # O nome do campo do arquivo no formulário deve ser 'pdf_file'
-            # Usamos .get() para evitar KeyErrors se o arquivo não vier por algum motivo
-            pdf_file = request.FILES.get('pdf_file') 
+            # Capturando os dados do formulário
+            nome_aluno = form.cleaned_data['nome_aluno']
+            matricula = form.cleaned_data['matricula']
+            curso = form.cleaned_data['curso']
+            pdf_file = form.cleaned_data['pdf_file'] 
             
             if not pdf_file:
-                # Este caso só deve ocorrer se houver um problema estranho no frontend
                 return JsonResponse({"erro": "Nenhum arquivo 'pdf_file' encontrado na requisição."}, status=400)
+            
+            # TODO: O próximo passo será criar ou obter o objeto Aluno aqui
+            # Exemplo de lógica para o futuro:
+            # aluno, created = Aluno.objects.get_or_create(
+            #     matricula=matricula,
+            #     defaults={'nome': nome_aluno, 'curso': curso}
+            # )
             
             # Chama a função de processamento
             dados = processar_historico_pdf(pdf_file)
             
             if dados is not None:
-                # Retorna o JSON com os dados (mesmo que ainda vazios pelo seu TODO)
+                # Adiciona os dados do aluno fornecidos no form ao resultado para referência
+                dados['nome_aluno_input'] = nome_aluno
+                dados['matricula_input'] = matricula
+                dados['curso_input'] = curso
+                
+                # TODO: Aqui deve vir a lógica de salvar o Historico, Disciplinas, etc.
+                
+                # Por enquanto, retorna os dados processados + os dados de input
                 return JsonResponse(dados, status=200)
             else:
-                # Caso a função processar_historico_pdf retorne None (erro interno no PDF)
-                # Você pode usar um JsonResponse para APIs ou render para um fluxo de formulário tradicional.
                 return JsonResponse({"erro": "Falha ao processar o arquivo PDF. Verifique o console para mais detalhes."}, status=500)
         else:
-            # Se o formulário não for válido (ex: erro no tipo de arquivo, limite de tamanho)
+            # Se o formulário não for válido, retorna um erro JSON (assumindo chamada AJAX)
             erros = form.errors.as_json()
             return JsonResponse({"erro": "Dados inválidos", "detalhes": erros}, status=400)
             
