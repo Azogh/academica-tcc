@@ -335,15 +335,75 @@ def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
             
         print(f"--- DEBUG: 2. Extração de texto concluída. Tamanho total: {len(full_text)} ---")
         
+<<<<<<< HEAD
         # 3. Extração dos Dados das Disciplinas (Foco no RegEx)
         
         # Define os limites para a busca da tabela de disciplinas
+=======
+        # 2. Extração dos Dados do Aluno e Curso (Página 1)
+        
+        # Nome do Aluno
+        nome_match = re.search(r'Nome:\s*(.+?)\s*Data de Nascimento', full_text, re.DOTALL)
+        if nome_match:
+            dados_extraidos['nome_aluno'] = nome_match.group(1).strip()
+            
+        # Matrícula
+        matricula_match = re.search(r'Matrícula:\s*(\d+)', full_text)
+        if matricula_match:
+            dados_extraidos['matricula'] = matricula_match.group(1).strip()
+            
+        # Curso
+        # Captura o texto após 'Curso:' e antes de '/CCSSB' para evitar caracteres extras
+        curso_match = re.search(r'Curso:\s*(.+?)/CCSSB', full_text, re.DOTALL)
+        if curso_match:
+            dados_extraidos['curso'] = curso_match.group(1).strip()
+
+
+        # 3. Extração dos Dados das Disciplinas (Páginas 2 e 3)
+        
+        # Regex para encontrar a tabela de disciplinas. 
+        # A tabela começa após "Componentes Curriculares Cursados/Cursando"
+        # e termina antes de "Legenda" ou "Para verificar a autenticidade".
+        # O padrão busca linhas que começam com "Ano/Periodo" (colunas) ou um Código de disciplina (8 dígitos)
+        
+        # O padrão busca linhas que se parecem com:
+        # "2019.2 08023007 FUNDAMENTOS DE SISTEMAS DE INFORMAÇÃO Dr. CLAITON MARQUES CORREA (36h) 36 36 01 75.0 8,6 8.6 APR"
+        
+        # Busca todas as linhas que contenham um código de 8 dígitos seguido pelo nome da disciplina
+        # e que tenham a coluna "Situação" (APR, REP, etc.) no final.
+        # Este é um RegEx complexo e pode precisar de ajustes finos dependendo da saída do PyPDF2.
+        
+        # Padrão: Ano/Periodo (opcional) + Código (8 dígitos) + Nome da Disciplina + ... + Média + Situação (3-5 letras maiúsculas)
+        
+        # Nota: Como o PyPDF2 mescla as colunas, o mais seguro é buscar por padrões de linhas.
+        
+        # Exemplo de linha bruta:
+        # "2019.2 08023007 FUNDAMENTOS DE SISTEMAS DE INFORMAÇÃO Dr. CLAITON MARQUES CORREA (36h) 36 36 01 75.0 8,6 8.6 APR"
+        
+        # Vamos usar um bloco de texto que contenha a tabela para iterar
+        # Ele começa após 'Componentes Curriculares Cursados/Cursando'
+>>>>>>> 702790a (atualização)
         start_index = full_text.find("Componentes Curriculares Cursados/Cursando")
         end_index = full_text.find("Legenda")
         
         if start_index != -1 and end_index != -1:
             tabela_text = full_text[start_index:end_index]
             
+<<<<<<< HEAD
+=======
+            # Padrão mais flexível: Ano/Período + Código + Nome da Disciplina + ... + Média + Situação
+            # (\d{4}\.\d)\s* # Ano/Período (Ex: 2019.2) - Opcional, pois algumas linhas não têm
+            # (\d{8}) # Código da Disciplina (Ex: 08023007)
+            # (.+?) # Nome e Docente (Captura tudo que vier depois, non-greedy)
+            # (\d{2,3})\s*(\d{2,3}) # CH e Carga Horária (duas colunas)
+            # ([\d\.\,]+\s*) # Média (Ex: 8.6 ou 7,5)
+            # (APR|REP|REPMF|CANC|DISP|MATR) # Situação (o mais importante)
+            
+            # Simplificação: Focar em Código, Nome e Situação no final
+            # O PyPDF2 torna a extração de colunas muito difícil. Focaremos no código, nome e situação.
+            # O bloco regex busca um código de disciplina, um nome (greedy) e uma situação conhecida no final.
+            
+>>>>>>> 702790a (atualização)
             # Padrão: Código (8d) + Nome (tudo até...)+ CH/Carga Horária + ... + Situação
             disciplina_regex = re.compile(
                 r'(\d{8})\s*(.+?)\s*(\d{2,3})\s*(\d{2,3})\s*(\d{2})\s*([\d\.\,]+\s*)*([\d\.\,]+\s*)*(APR|REP|REPMF|CANC|DISP|MATR|CUMP)', 
@@ -356,11 +416,24 @@ def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
                 situacao = match.group(7).strip()
                 media = (match.group(6) or '').strip()
                 
+<<<<<<< HEAD
                 # Limpa o Nome (Removendo Dr., MSc., e horas)
                 nome = re.sub(r'Dr\.\s*.+\(|\s*MSC\.\s*.+\(|\s*MSc\.\s*.+\(|\s*Professor\s*.+\(|\(\d{2,3}h\)|e\s*|\n', '', nome_bruto).strip()
                 
                 if nome and len(nome) > 5 and 'Componente Curricular' not in nome:
                     
+=======
+                # O nome bruto contém o nome do professor. Precisamos separar:
+                nome = re.sub(r'Dr\.\s*.+\(|\s*MSC\.\s*.+\(|\s*MSc\.\s*.+\(|\s*Professor\s*.+\(|\(\d{2,3}h\)|e\s*|\n', '', nome_bruto).strip()
+                
+                # A lógica de extração da CH e Média é mais propensa a erro devido ao formato.
+                # Para iniciar, vamos pegar apenas o essencial:
+                
+                # Filtrar linhas que são apenas a linha de cabeçalho ou extras
+                if nome and len(nome) > 5 and 'Componente Curricular' not in nome:
+                    
+                    # Vamos tentar extrair a carga horária da string bruta se existir
+>>>>>>> 702790a (atualização)
                     ch_match = re.search(r'(\d{2,3})h', nome_bruto)
                     ch = ch_match.group(1) if ch_match else ''
                     
@@ -371,6 +444,7 @@ def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
                         'media': media.replace(',', '.') if media else '',
                         'situacao': situacao
                     })
+<<<<<<< HEAD
             
             print(f"--- DEBUG: 3. Disciplinas extraídas: {len(dados_extraidos['disciplinas'])} ---")
 
@@ -379,6 +453,14 @@ def processar_historico_pdf(pdf_file, nome_aluno, matricula, curso):
         return None
     except Exception as e:
         print(f"!!! ERRO INESPERADO DURANTE O PROCESSAMENTO DO PDF: {e} !!!")
+=======
+
+    except PyPDF2.errors.PdfReadError:
+        print("Erro: O arquivo PDF está corrompido ou protegido por senha.")
+        return None
+    except Exception as e:
+        print(f"Erro inesperado durante o processamento do PDF: {e}")
+>>>>>>> 702790a (atualização)
         return None
     
     print("--- DEBUG: 4. FIM DO PROCESSAMENTO DE DISC. ---")
@@ -414,6 +496,7 @@ def importar_historico(request):
 def importar_historico_action(request: HttpRequest):
     print("\n--- INÍCIO DA REQUISIÇÃO IMPORTAR_HISTORICO_ACTION ---")
     if request.method == 'POST':
+<<<<<<< HEAD
         # Instancia o formulário, assumindo que ele já inclui os campos de texto
         form = HistoricoUploadForm(request.POST, request.FILES)
         
@@ -444,6 +527,36 @@ def importar_historico_action(request: HttpRequest):
             return JsonResponse({"erro": "Dados inválidos", "detalhes": erros}, status=400)
             
     print("--- REDIRECIONANDO: Não é POST ---")
+=======
+        # Instancia o formulário, passando POST data E ARQUIVOS (request.FILES)
+        form = HistoricoUploadForm(request.POST, request.FILES)
+        
+        if form.is_valid():
+            # O nome do campo do arquivo no formulário deve ser 'pdf_file'
+            # Usamos .get() para evitar KeyErrors se o arquivo não vier por algum motivo
+            pdf_file = request.FILES.get('pdf_file') 
+            
+            if not pdf_file:
+                # Este caso só deve ocorrer se houver um problema estranho no frontend
+                return JsonResponse({"erro": "Nenhum arquivo 'pdf_file' encontrado na requisição."}, status=400)
+            
+            # Chama a função de processamento
+            dados = processar_historico_pdf(pdf_file)
+            
+            if dados is not None:
+                # Retorna o JSON com os dados (mesmo que ainda vazios pelo seu TODO)
+                return JsonResponse(dados, status=200)
+            else:
+                # Caso a função processar_historico_pdf retorne None (erro interno no PDF)
+                # Você pode usar um JsonResponse para APIs ou render para um fluxo de formulário tradicional.
+                return JsonResponse({"erro": "Falha ao processar o arquivo PDF. Verifique o console para mais detalhes."}, status=500)
+        else:
+            # Se o formulário não for válido (ex: erro no tipo de arquivo, limite de tamanho)
+            erros = form.errors.as_json()
+            return JsonResponse({"erro": "Dados inválidos", "detalhes": erros}, status=400)
+            
+    # Se não for POST, redireciona para a página de importação
+>>>>>>> 702790a (atualização)
     return redirect('importar_historico')
 
 # Views para o CRUD de Horários
