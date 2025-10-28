@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
+from django.urls import include # Mantenha o include, mas ele não será usado aqui.
 
 urlpatterns = [
     # URLs de Páginas e Autenticação
@@ -28,18 +29,14 @@ urlpatterns = [
     path('turmas/editar/<int:pk>/', views.editar_turma, name='editar_turma'),
     path('turmas/excluir/<int:pk>/', views.excluir_turma, name='excluir_turma'),
     
-    # URLs para o CRUD de Horários
+    # URLs para o CRUD e Consulta de Horários
     path('horarios/', views.listar_horarios, name='listar_horarios'),
     path('horarios/adicionar/', views.adicionar_horario, name='adicionar_horario'),
     path('horarios/editar/<int:pk>/', views.editar_horario, name='editar_horario'),
     path('horarios/excluir/<int:pk>/', views.excluir_horario, name='excluir_horario'),
     path('horarios/consultar/', views.consultar_horarios, name='consultar_horarios'),
     
-    # URLs para o CRUD e Importação de Histórico
-    path('historico/importar/', views.importar_historico, name='importar_historico'),
-    path('historico/upload/', views.importar_historico_action, name='importar_historico_action'),
-    path('historico/consultar/<int:pk>/', views.consultar_historico, name='consultar_historico'),
-    path('historico/editar/<int:pk>/', views.editar_historico, name='editar_historico'),
-    path('historico/excluir/<int:pk>/', views.excluir_historico, name='excluir_historico'),
+    # URLs de Dados para Dashboards e Análise (Módulo Core)
+    path('chart-data/', views.chart_data_view, name='chart_data_view'),
     path('historico/analise/', views.consultar_analise, name='consultar_analise'),
 ]

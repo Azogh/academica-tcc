@@ -4,15 +4,43 @@
 {% block title %}Gerenciar Históricos{% endblock %}
 
 {% block content %}
+    <style>
+        /* Estilos para as mensagens de feedback */
+        .message-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            display: none; /* Inicia oculto */
+        }
+        .message-box.success {
+            background-color: rgba(40, 167, 69, 0.2); /* Verde claro */
+            color: #28a745; /* Verde escuro */
+            border: 1px solid #28a745;
+        }
+        .message-box.error {
+            background-color: rgba(220, 53, 69, 0.2); /* Vermelho claro */
+            color: #dc3545; /* Vermelho escuro */
+            border: 1px solid #dc3545;
+        }
+        .message-box i {
+            margin-right: 10px;
+        }
+    </style>
+
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <a href="{% url 'painel' %}" class="cancel-button">Voltar</a>
         <h1 style="margin: 0; text-align: center; flex-grow: 1;">Gerenciar Históricos</h1>
         <a href="#" class="cta-button" id="toggle-upload-form">Importar Histórico</a>
     </div>
 
+    <div id="message-box" class="message-box"></div>
+
     <div id="upload-form-container" class="content-card" style="display: none; margin-bottom: 20px;">
         <h2 style="margin-bottom: 20px; font-size: 1.5em; text-align: center;">Fazer Upload de Histórico</h2>
-        <form method="post" enctype="multipart/form-data" action="{% url 'importar_historico_action' %}">
+        
+        <form id="historico-upload-form" method="post" enctype="multipart/form-data" action="{% url 'upload:importar_historico_action' %}">
             {% csrf_token %}
             {% for field in form %}
             <div class="form-group">
@@ -54,7 +82,7 @@
                 </div>
                 <div class="form-group" style="display: flex; gap: 10px;">
                     <button type="submit" class="cta-button">Filtrar</button>
-                    <a href="{% url 'importar_historico' %}" class="cancel-button">Limpar</a>
+                    <a href="{% url 'upload:importar_historico' %}" class="cancel-button">Limpar</a>
                 </div>
             </form>
         </div>
@@ -68,6 +96,7 @@
                     <th>Matrícula</th>
                     <th>Nome</th>
                     <th>Data do Upload</th>
+                    <th>Status</th>
                     <th>Ações</th>
                 </tr>
             </thead>
@@ -78,15 +107,16 @@
                     <td>{{ historico.aluno.matricula }}</td>
                     <td>{{ historico.aluno.nome }}</td>
                     <td>{{ historico.data_upload }}</td>
+                    <td>{{ historico.get_status_display }}</td>
                     <td style="display: flex; gap: 10px;">
-                        <a href="{% url 'consultar_historico' historico.pk %}" style="color: var(--accent-color);"><i class="fas fa-search-plus"></i></a>
-                        <a href="{% url 'editar_historico' historico.pk %}" style="color: var(--accent-color);"><i class="fas fa-pen-to-square"></i></a>
-                        <a href="{% url 'excluir_historico' historico.pk %}" style="color: #dc3545;"><i class="fas fa-trash-can"></i></a>
+                        <a href="{% url 'upload:consultar_historico_detalhe' historico.pk %}" style="color: var(--accent-color);"><i class="fas fa-search-plus"></i></a>
+                        <a href="#" style="color: var(--accent-color);"><i class="fas fa-pen-to-square"></i></a>
+                        <a href="#" style="color: #dc3545;"><i class="fas fa-trash-can"></i></a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5">Nenhum histórico encontrado.</td>
+                    <td colspan="6">Nenhum histórico encontrado.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -112,14 +142,13 @@
     </div>
     
     <script>
+        // ------------------------------------
+        // Lógica para Abrir/Fechar Formulário e Filtros
+        // ------------------------------------
         document.getElementById('toggle-upload-form').addEventListener('click', function(e) {
             e.preventDefault();
             const uploadFormContainer = document.getElementById('upload-form-container');
-            if (uploadFormContainer.style.display === 'none' || uploadFormContainer.style.display === '') {
-                uploadFormContainer.style.display = 'block';
-            } else {
-                uploadFormContainer.style.display = 'none';
-            }
+            uploadFormContainer.style.display = uploadFormContainer.style.display === 'none' ? 'block' : 'none';
         });
         
         document.getElementById('filter-toggle').addEventListener('click', function(e) {
@@ -135,6 +164,69 @@
                 icon.classList.remove('fa-times');
                 icon.classList.add('fa-filter');
             }
+        });
+
+        // ------------------------------------
+        // Lógica AJAX para Submissão do Formulário
+        // ------------------------------------
+
+        const form = document.getElementById('historico-upload-form');
+        const messageBox = document.getElementById('message-box');
+        
+        // Assegura que o messageBox não esteja visível no início
+        messageBox.style.display = 'none'; 
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Impede o envio padrão do formulário
+            
+            // Limpa mensagens anteriores
+            messageBox.innerHTML = '';
+            
+            const formData = new FormData(form);
+            const actionUrl = form.getAttribute('action');
+            
+            // Feedback de carregamento
+            messageBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando PDF. Por favor, aguarde...';
+            messageBox.className = 'message-box success'; // Usar a cor verde para o carregamento
+            messageBox.style.display = 'block';
+            
+            // Opcional: Desabilitar o botão para evitar cliques duplicados
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+
+            fetch(actionUrl, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                submitButton.disabled = false; // Reabilitar botão
+                
+                // Tratar o JSON de erro ou sucesso
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.erro || 'Erro desconhecido no processamento.');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Sucesso: Aluno e histórico salvos
+                messageBox.innerHTML = `<i class="fas fa-check-circle"></i> Sucesso! ${data.disciplinas_salvas} disciplinas de ${data.aluno_nome} importadas.`;
+                messageBox.className = 'message-box success';
+                
+                // Redireciona para a tela de consulta
+                setTimeout(() => {
+                    window.location.href = "{% url 'upload:consultar_historicos' %}";
+                }, 2000);
+
+            })
+            .catch(error => {
+                // Trata erros
+                console.error('Erro de Processamento:', error);
+                messageBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Erro: ${error.message}`;
+                messageBox.className = 'message-box error';
+                messageBox.style.display = 'block';
+            });
         });
     </script>
 {% endblock %}
