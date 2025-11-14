@@ -1,0 +1,69 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Detalhe do Histórico{% endblock %}
+{% block page_title %}Histórico do Aluno{% endblock %}
+
+{% block content %}
+    <style>
+        .aluno-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .aluno-info p {
+            margin: 5px 0;
+            font-size: 1.1em;
+        }
+        .aluno-info p strong {
+            color: var(--accent-color);
+        }
+    </style>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <a href="{% url 'upload:consultar_historicos' %}" class="cancel-button">Voltar</a>
+        <a href="#" class="cta-button">Analisar Histórico</a>
+    </div>
+
+    <div class="aluno-info">
+        <p><strong>Nome:</strong> {{ historico.aluno.nome }}</p>
+        <p><strong>Matrícula:</strong> {{ historico.aluno.matricula }}</p>
+        <p><strong>Curso:</strong> {{ historico.aluno.curso }}</p>
+        <p><strong>Ingresso:</strong> {{ historico.aluno.ano_ingresso }}</p>
+    </div>
+
+    <h2 style="text-align: left; font-size: 1.5em; margin-bottom: 20px;">Disciplinas Cursadas</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Semestre</th>
+                <th>Sigla</th>
+                <th>Nome da Disciplina</th>
+                <th>CH</th>
+                <th>Nota</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in itens %}
+            <tr>
+                <td>{{ item.semestre_cursado }}</td>
+                <td>{{ item.disciplina_sigla }}</td>
+                <td>{{ item.disciplina_nome }}</td>
+                <td>{{ item.ch }}h</td>
+                <td>{{ item.nota|default_if_none:"-" }}</td>
+                <td>{{ item.status_disciplina }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">Nenhum item encontrado neste histórico.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}
