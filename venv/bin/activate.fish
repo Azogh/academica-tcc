@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /mnt/c/Users/Andre/OneDrive/Documentos/GitHub/academica-tcc/venv
+set -gx VIRTUAL_ENV /home/agso/Documentos/Workspaces/academica-tcc/venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

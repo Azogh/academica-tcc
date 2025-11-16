@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'upload',
+    'analytics'
 ]
 
 MIDDLEWARE = [
@@ -126,3 +127,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ... outras configurações ...
 
 AUTH_USER_MODEL = 'core.Usuario'
+
+
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

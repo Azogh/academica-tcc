@@ -1,4 +1,4 @@
-#!/home/agso/projetos/Ambiente_Python/TCC/venv/bin/python3
+#!/home/agso/Documentos/Workspaces/academica-tcc/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
