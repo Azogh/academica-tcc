@@ -1,232 +1,175 @@
 {% extends 'core/base.html' %}
-{% load static %}
-
-{% block title %}Gerenciar Históricos{% endblock %}
+{% load static %}{% block title %}Importar Histórico{% endblock %}
+{% block page_title %}Importar Histórico de Aluno{% endblock %} 
 
 {% block content %}
-    <style>
-        /* Estilos para as mensagens de feedback */
-        .message-box {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: 600;
-            display: none; /* Inicia oculto */
-        }
-        .message-box.success {
-            background-color: rgba(40, 167, 69, 0.2); /* Verde claro */
-            color: #28a745; /* Verde escuro */
-            border: 1px solid #28a745;
-        }
-        .message-box.error {
-            background-color: rgba(220, 53, 69, 0.2); /* Vermelho claro */
-            color: #dc3545; /* Vermelho escuro */
-            border: 1px solid #dc3545;
-        }
-        .message-box i {
-            margin-right: 10px;
-        }
-    </style>
+<style>
+    /* Estilo para os botões de ação como na sua imagem */
+    .action-buttons a, .action-buttons button {
+        color: #fff;
+        text-decoration: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin-right: 5px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9em;
+    }
+    .btn-view { background-color: #0d6efd; } /* Azul */
+    .btn-edit { background-color: #ffc107; color: #000 !important; } /* Amarelo */
+    .btn-delete { background-color: #dc3545; } /* Vermelho */
+    .btn-disabled { background-color: #6c757d; cursor: not-allowed; } /* Cinza */
+</style>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <a href="{% url 'painel' %}" class="cancel-button">Voltar</a>
-        <h1 style="margin: 0; text-align: center; flex-grow: 1;">Gerenciar Históricos</h1>
-        <a href="#" class="cta-button" id="toggle-upload-form">Importar Histórico</a>
-    </div>
-
-    <div id="message-box" class="message-box"></div>
-
-    <div id="upload-form-container" class="content-card" style="display: none; margin-bottom: 20px;">
-        <h2 style="margin-bottom: 20px; font-size: 1.5em; text-align: center;">Fazer Upload de Histórico</h2>
-        
-        <form id="historico-upload-form" method="post" enctype="multipart/form-data" action="{% url 'upload:importar_historico_action' %}">
-            {% csrf_token %}
-            {% for field in form %}
-            <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-            </div>
-            {% endfor %}
-            <div class="form-buttons" style="justify-content: flex-end;">
-                <button type="submit" class="cta-button">Enviar</button>
-            </div>
-        </form>
-    </div>
-
-    <div class="content-card" style="margin-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px;">
-            <h2 style="margin: 0; font-size: 1.2em;">Filtros</h2>
-            <a href="#" id="filter-toggle" style="font-size: 1.5em; color: var(--text-color);"><i class="fas fa-filter"></i></a>
+<form id="uploadForm" class="form-container" method="post" enctype="multipart/form-data" 
+      data-url="{% url 'upload:importar_historico_action' %}">
+    {% csrf_token %}
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label for="{{ form.nome.id_for_label }}">Nome do Aluno:</label>
+            {{ form.nome }}
         </div>
-        
-        <div id="filter-container" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: flex-end; gap: 15px; padding-bottom: 20px;">
-            <form method="get" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; flex-grow: 1;">
-                <div class="form-group" style="flex: 1;">
-                    <label for="curso_filter">Curso:</label>
-                    <select name="curso" id="curso_filter">
-                        <option value="">Todos</option>
-                        {% for curso in cursos_disponiveis %}
-                            <option value="{{ curso }}" {% if request.GET.curso == curso %}selected{% endif %}>{{ curso }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label for="ano_filter">Ano:</label>
-                    <select name="ano" id="ano_filter">
-                        <option value="">Todos</option>
-                        {% for ano in anos_disponiveis %}
-                            <option value="{{ ano }}" {% if request.GET.ano == ano|slugify %}selected{% endif %}>{{ ano }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group" style="display: flex; gap: 10px;">
-                    <button type="submit" class="cta-button">Filtrar</button>
-                    <a href="{% url 'upload:importar_historico' %}" class="cancel-button">Limpar</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="content-card" style="margin-top: 20px;">
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Matrícula</th>
-                    <th>Nome</th>
-                    <th>Data do Upload</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for historico in historicos %}
-                <tr>
-                    <td>{{ historico.pk }}</td>
-                    <td>{{ historico.aluno.matricula }}</td>
-                    <td>{{ historico.aluno.nome }}</td>
-                    <td>{{ historico.data_upload }}</td>
-                    <td>{{ historico.get_status_display }}</td>
-                    <td style="display: flex; gap: 10px;">
-                        <a href="{% url 'upload:consultar_historico_detalhe' historico.pk %}" style="color: var(--accent-color);"><i class="fas fa-search-plus"></i></a>
-                        <a href="#" style="color: var(--accent-color);"><i class="fas fa-pen-to-square"></i></a>
-                        <a href="#" style="color: #dc3545;"><i class="fas fa-trash-can"></i></a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6">Nenhum histórico encontrado.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <div class="pagination">
-            <span class="step-links">
-                {% if historicos.has_previous %}
-                    <a href="?page=1">&laquo; primeira</a>
-                    <a href="?page={{ historicos.previous_page_number }}">anterior</a>
-                {% endif %}
-
-                <span class="current">
-                    Página {{ historicos.number }} de {{ historicos.paginator.num_pages }}.
-                </span>
-
-                {% if historicos.has_next %}
-                    <a href="?page={{ historicos.next_page_number }}">próxima</a>
-                    <a href="?page={{ historicos.paginator.num_pages }}">última &raquo;</a>
-                {% endif %}
-            </span>
+        <div class="form-group">
+            <label for="{{ form.matricula.id_for_label }}">Matrícula:</label>
+            {{ form.matricula }}
         </div>
     </div>
     
-    <script>
-        // ------------------------------------
-        // Lógica para Abrir/Fechar Formulário e Filtros
-        // ------------------------------------
-        document.getElementById('toggle-upload-form').addEventListener('click', function(e) {
-            e.preventDefault();
-            const uploadFormContainer = document.getElementById('upload-form-container');
-            uploadFormContainer.style.display = uploadFormContainer.style.display === 'none' ? 'block' : 'none';
-        });
-        
-        document.getElementById('filter-toggle').addEventListener('click', function(e) {
-            e.preventDefault();
-            const filterContainer = document.getElementById('filter-container');
-            const icon = this.querySelector('i');
-            if (filterContainer.style.display === 'none' || filterContainer.style.display === '') {
-                filterContainer.style.display = 'flex';
-                icon.classList.remove('fa-filter');
-                icon.classList.add('fa-times');
-            } else {
-                filterContainer.style.display = 'none';
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-filter');
-            }
-        });
+    <div class="form-row">
+        <div class="form-group">
+            <label for="{{ form.curso.id_for_label }}">Curso:</label>
+            {{ form.curso }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.ano_ingresso.id_for_label }}">Ano de Ingresso:</label>
+            {{ form.ano_ingresso }}
+        </div>
+    </div>
 
-        // ------------------------------------
-        // Lógica AJAX para Submissão do Formulário
-        // ------------------------------------
+    <div class="form-row">
+        <div class="form-group" style="flex-grow: 1;">
+            <label for="{{ form.pdf_file.id_for_label }}">Arquivo PDF do Histórico:</label>
+            {{ form.pdf_file }}
+        </div>
+    </div>
 
-        const form = document.getElementById('historico-upload-form');
-        const messageBox = document.getElementById('message-box');
-        
-        // Assegura que o messageBox não esteja visível no início
-        messageBox.style.display = 'none'; 
+    <div class="button-group">
+        <button type="submit" class="cta-button">
+            <i class="fas fa-upload"></i> Enviar e Processar
+        </button>
+    </div>
+</form>
 
-        form.addEventListener('submit', function(e) {
-            e.preventDefault(); // Impede o envio padrão do formulário
+<div id="loading" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Processando PDF com IA... Isso pode levar alguns segundos.</p>
+</div>
+
+<div id="feedback" style="display: none; margin-top: 20px;"></div>
+
+
+<hr style="margin: 30px 0; border-color: rgba(255, 255, 255, 0.2);">
+
+
+<h2 style="text-align: left; font-size: 1.5em; margin-bottom: 20px;">Último Histórico Enviado</h2>
+
+{% if ultimo_historico %}
+    <table>
+        <thead>
+            <tr>
+                <th>Aluno</th>
+                <th>Matrícula</th>
+                <th>Data do Upload</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ ultimo_historico.aluno.nome }}</td>
+                <td>{{ ultimo_historico.aluno.matricula }}</td>
+                <td>{{ ultimo_historico.data_upload|date:"d/m/Y H:i" }}</td>
+                <td>
+                    <span class="status-badge 
+                        {% if ultimo_historico.status == 'CONCLUIDO' %}status-concluido
+                        {% elif ultimo_historico.status == 'PENDENTE' %}status-pendente
+                        {% else %}status-erro
+                        {% endif %}">
+                        {{ ultimo_historico.get_status_display }}
+                    </span>
+                </td>
+                <td class="action-buttons">
+                    <a href="{% url 'upload:consultar_historico_detalhe' pk=ultimo_historico.pk %}" class="btn-view" title="Visualizar">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    
+                    <a href="#" class="btn-edit btn-disabled" title="Editar (Em breve)">
+                        <i class="fas fa-pencil-alt"></i>
+                    </a>
+                    
+                    <form method="POST" action="{% url 'upload:excluir_historico' pk=ultimo_historico.pk %}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este histórico?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+{% else %}
+    <p style="text-align: center; font-size: 1.1em; color: #aaa;">Nenhum histórico foi enviado ainda.</p>
+{% endif %}
+
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    var form = this;
+    var url = form.getAttribute('data-url');
+    var formData = new FormData(form);
+    
+    var loading = document.getElementById('loading');
+    var feedback = document.getElementById('feedback');
+    
+    loading.style.display = 'flex'; // Mostrar spinner
+    feedback.style.display = 'none'; // Esconder feedback antigo
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        loading.style.display = 'none'; // Esconder spinner
+        if (data.sucesso) {
+            feedback.className = 'feedback-success';
+            feedback.innerHTML = `<i class="fas fa-check-circle"></i> ${data.mensagem}`;
             
-            // Limpa mensagens anteriores
-            messageBox.innerHTML = '';
+            // Recarrega a página para mostrar o item na lista "Último Histórico"
+            setTimeout(function() {
+                location.reload(); 
+            }, 1500);
             
-            const formData = new FormData(form);
-            const actionUrl = form.getAttribute('action');
-            
-            // Feedback de carregamento
-            messageBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando PDF. Por favor, aguarde...';
-            messageBox.className = 'message-box success'; // Usar a cor verde para o carregamento
-            messageBox.style.display = 'block';
-            
-            // Opcional: Desabilitar o botão para evitar cliques duplicados
-            const submitButton = form.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
+        } else {
+            feedback.className = 'feedback-error';
+            feedback.innerHTML = `<i class="fas fa-times-circle"></i> Erro: ${data.erro}`;
+        }
+        feedback.style.display = 'block';
+    })
+    .catch(error => {
+        console.error('Erro no fetch:', error);
+        loading.style.display = 'none';
+        feedback.className = 'feedback-error';
+        feedback.innerHTML = '<i class="fas fa-times-circle"></i> Erro de comunicação com o servidor.';
+        feedback.style.display = 'block';
+    });
+});
+</script>
 
-            fetch(actionUrl, {
-                method: 'POST',
-                body: formData,
-            })
-            .then(response => {
-                submitButton.disabled = false; // Reabilitar botão
-                
-                // Tratar o JSON de erro ou sucesso
-                if (!response.ok) {
-                    return response.json().then(errorData => {
-                        throw new Error(errorData.erro || 'Erro desconhecido no processamento.');
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Sucesso: Aluno e histórico salvos
-                messageBox.innerHTML = `<i class="fas fa-check-circle"></i> Sucesso! ${data.disciplinas_salvas} disciplinas de ${data.aluno_nome} importadas.`;
-                messageBox.className = 'message-box success';
-                
-                // Redireciona para a tela de consulta
-                setTimeout(() => {
-                    window.location.href = "{% url 'upload:consultar_historicos' %}";
-                }, 2000);
-
-            })
-            .catch(error => {
-                // Trata erros
-                console.error('Erro de Processamento:', error);
-                messageBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Erro: ${error.message}`;
-                messageBox.className = 'message-box error';
-                messageBox.style.display = 'block';
-            });
-        });
-    </script>
 {% endblock %}

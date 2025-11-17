@@ -1,56 +1,108 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Consultar Histórico{% endblock %}
+{% block title %}Consultar Históricos{% endblock %}
+{% block page_title %}Consultar Históricos de Alunos{% endblock %}
 
 {% block content %}
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <a href="{% url 'importar_historico' %}" class="cancel-button">Voltar</a>
-        <h1 style="margin: 0; text-align: center; flex-grow: 1;">Consultar Histórico</h1>
-        <button type="button" class="cta-button">Analisar</button>
-    </div>
+<style>
+    /* Copiando os estilos de botões e status que 
+       já definimos nos outros templates para consistência.
+    */
+    .action-buttons a, .action-buttons button {
+        color: #fff;
+        text-decoration: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin-right: 5px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9em;
+    }
+    .btn-view { background-color: #0d6efd; } /* Azul */
+    .btn-delete { background-color: #dc3545; } /* Vermelho */
 
-    <div class="content-card">
-        <div style="margin-bottom: 30px;">
-            <h2 style="text-align: left; font-size: 1.5em; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px;">Dados do Aluno</h2>
-            <p><strong>Nome:</strong> {{ historico.aluno.nome }}</p>
-            <p><strong>Matrícula:</strong> {{ historico.aluno.matricula }}</p>
-            <p><strong>Curso:</strong> {{ historico.aluno.curso }}</p>
-        </div>
+    .status-badge {
+        display: inline-block;
+        padding: 0.35em 0.65em;
+        font-size: .75em;
+        font-weight: 700;
+        line-height: 1;
+        color: #fff;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.375rem;
+    }
+    .status-concluido { background-color: #198754; } /* Verde */
+    .status-pendente { background-color: #ffc107; color: #000; } /* Amarelo */
+    .status-erro { background-color: #dc3545; } /* Vermelho */
+</style>
 
-        <div style="margin-bottom: 30px;">
-            <h2 style="text-align: left; font-size: 1.5em; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px;">Disciplinas Cursadas</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Disciplina</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for disciplina in disciplinas_cursadas %}
-                    <tr>
-                        <td>{{ disciplina.disciplina.nome }}</td>
-                        <td>{{ disciplina.get_status_display }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="2">Nenhuma disciplina cursada encontrada.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div>
-            <h2 style="text-align: left; font-size: 1.5em; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px;">Disciplinas Pendentes</h2>
-            <ul>
-                {% for disciplina in disciplinas_pendentes %}
-                    <li>{{ disciplina.nome }} ({{ disciplina.sigla }})</li>
-                {% empty %}
-                    <li>Nenhuma disciplina pendente encontrada.</li>
-                {% endfor %}
-            </ul>
+<form method="GET" action="{% url 'upload:consultar_historicos' %}" class="form-container" style="margin-bottom: 30px;">
+    <div class="form-row">
+        <div class="form-group" style="flex-grow: 1;">
+            <label for="id_q">Buscar por Nome ou Matrícula:</label>
+            <input type="text" name="q" id="id_q" value="{{ query }}" placeholder="Digite o nome ou matrícula do aluno...">
         </div>
     </div>
+    <div class="button-group">
+        <button type="submit" class="cta-button">
+            <i class="fas fa-search"></i> Buscar
+        </button>
+    </div>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>Aluno</th>
+            <th>Matrícula</th>
+            <th>Data do Upload</th>
+            <th>Status</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for historico in historicos %}
+        <tr>
+            <td>{{ historico.aluno.nome }}</td>
+            <td>{{ historico.aluno.matricula }}</td>
+            <td>{{ historico.data_upload|date:"d/m/Y H:i" }}</td>
+            <td>
+                <span class="status-badge 
+                    {% if historico.status == 'CONCLUIDO' %}status-concluido
+                    {% elif historico.status == 'PENDENTE' %}status-pendente
+                    {% else %}status-erro
+                    {% endif %}">
+                    {{ historico.get_status_display }}
+                </span>
+            </td>
+            <td class="action-buttons">
+                <a href="{% url 'upload:consultar_historico_detalhe' pk=historico.pk %}" class="btn-view" title="Visualizar">
+                    <i class="fas fa-eye"></i>
+                </a>
+                
+                <form method="POST" action="{% url 'upload:excluir_historico' pk=historico.pk %}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este histórico?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-delete" title="Excluir">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" style="text-align: center; padding: 20px; font-size: 1.1em;">
+                {% if query %}
+                    Nenhum histórico encontrado para a busca: "<strong>{{ query }}</strong>"
+                {% else %}
+                    Nenhum histórico foi importado ainda.
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
 {% endblock %}

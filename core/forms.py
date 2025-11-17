@@ -11,6 +11,7 @@ from .models import (
 
 # Lista de cursos do IFFar - São Borja
 CURSO_CHOICES = [
+        ('', 'Selecione um curso'), # Este é o "placeholder"
     ('LICENCIATURA EM MATEMÁTICA', 'Licenciatura em Matemática'),
     ('LICENCIATURA EM FÍSICA', 'Licenciatura em Física'),
     ('TECNÓLOGO EM GASTRONOMIA', 'Tecnólogo em Gastronomia'),

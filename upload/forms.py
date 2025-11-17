@@ -1,42 +1,55 @@
 from django import forms
-from .models import Aluno 
+# Não precisamos mais importar os modelos do core
+# from core.models import MatrizCurricular 
 
-# ====================================================================
-# Formulário para Upload de Histórico
-# ====================================================================
+# -------------------------------------------------------------------
+# LISTA DE CURSOS FIXA (HARDCODED)
+# -------------------------------------------------------------------
+# Como você mencionou, aqui fica a lista de cursos do seu campus
+# Adicione ou remova os cursos que precisar
+CURSO_CHOICES = [
+    ('', 'Selecione um curso'), # Este é o "placeholder"
+    ('LICENCIATURA EM MATEMÁTICA', 'Licenciatura em Matemática'),
+    ('LICENCIATURA EM FÍSICA', 'Licenciatura em Física'),
+    ('TECNÓLOGO EM GASTRONOMIA', 'Tecnólogo em Gastronomia'),
+    ('BACHARELADO EM SISTEMAS DE INFORMAÇÃO', 'Bacharelado em Sistemas de Informação'),
+    ('TECNÓLOGO EM GESTÃO DE TURISMO', 'Tecnólogo em Gestão de Turismo'),
+    # Adicione os outros cursos aqui...
+]
 
+# -------------------------------------------------------------------
+# SEU FORMULÁRIO MODIFICADO
+# -------------------------------------------------------------------
 class HistoricoUploadForm(forms.Form):
-    """
-    Formulário para o coordenador inserir os dados básicos do aluno
-    e fazer o upload do arquivo PDF do histórico escolar.
-    """
+    # Campos do Aluno
     nome = forms.CharField(
         max_length=100, 
-        label="Nome Completo do Aluno",
-        widget=forms.TextInput(attrs={'placeholder': 'Ex: João da Silva'})
+        widget=forms.TextInput(attrs={'placeholder': 'Nome completo do Aluno', 'class': 'form-control'})
     )
     matricula = forms.CharField(
         max_length=10, 
-        label="Número de Matrícula",
-        widget=forms.TextInput(attrs={'placeholder': 'Ex: 2023010001'})
+        widget=forms.TextInput(attrs={'placeholder': 'Nº da Matrícula', 'class': 'form-control'})
     )
-    curso = forms.CharField(
-        max_length=100, 
-        label="Curso de Ingresso",
-        widget=forms.TextInput(attrs={'placeholder': 'Ex: Bacharelado em Sistemas de Informação'})
+    
+    # --- CAMPO MODIFICADO ---
+    # Agora usa a lista de cursos fixa
+    curso = forms.ChoiceField(
+        choices=CURSO_CHOICES, # Usa a lista estática que definimos acima
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
+    # -------------------------
+
     ano_ingresso = forms.CharField(
         max_length=6, 
-        label="Ano/Semestre de Ingresso",
-        widget=forms.TextInput(attrs={'placeholder': 'Ex: 2023.1'})
+        widget=forms.TextInput(attrs={'placeholder': 'Ex: 2019.1', 'class': 'form-control'})
     )
+    
+    # Campo do Arquivo
     pdf_file = forms.FileField(
         label="Arquivo PDF do Histórico",
-        help_text="Selecione o arquivo PDF.",
-        # Validação para aceitar apenas PDF (opcional, mas boa prática)
-        widget=forms.ClearableFileInput(attrs={'accept': '.pdf'}) 
+        widget=forms.FileInput(attrs={'class': 'form-control'})
     )
-
+    
     def clean_matricula(self):
         """
         Validação customizada para garantir que a matrícula seja única

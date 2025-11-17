@@ -12,17 +12,23 @@ from .models import Aluno, Historico, HistoricoItens# from core.models import Di
 
 # Importa sua nova função do Gemini
 from .gemini_pdf import extrair_disciplinas_gemini
+from django.db.models import Q
 
 # -------------------------------------------------------------------
 # VIEW: Página de upload / listagem
 # -------------------------------------------------------------------
 @login_required
 def importar_historico(request):
-    # Lista apenas os históricos (uploads)
-    historicos = Historico.objects.select_related('aluno').order_by('-data_upload')
+    # ANTES:
+    # historicos = Historico.objects.select_related('aluno').order_by('-data_upload')
+
+    # DEPOIS:
+    # Busca apenas o último registro de upload
+    ultimo_historico = Historico.objects.select_related('aluno').order_by('-data_upload').first()
 
     return render(request, 'upload/importar_historico.html', {
-        'historicos': historicos,
+        # 'historicos': historicos, # Não passamos mais a lista inteira
+        'ultimo_historico': ultimo_historico, # Passamos apenas o último
         'form': HistoricoUploadForm(),
     })
 
@@ -131,11 +137,24 @@ def importar_historico_action(request):
 # -------------------------------------------------------------------
 @login_required
 def consultar_historicos(request):
-    historicos = Historico.objects.select_related('aluno').order_by('-data_upload')
-    return render(request, 'upload/consultar_historicos.html', {
-        'historicos': historicos
-    })
+# Pega o termo de busca da URL (ex: /consultar/?q=Joao)
+    query = request.GET.get('q', '') 
 
+    # Começa com todos os históricos
+    historicos_list = Historico.objects.select_related('aluno').order_by('-data_upload')
+
+    if query:
+        # Se um termo de busca foi enviado, filtra a lista
+        # A busca funciona por 'OU' (Q)
+        historicos_list = historicos_list.filter(
+            Q(aluno__nome__icontains=query) |      # Busca no nome do aluno
+            Q(aluno__matricula__icontains=query) # Busca na matrícula
+        )
+
+    return render(request, 'upload/consultar_historicos.html', {
+        'historicos': historicos_list, # Lista filtrada (ou completa)
+        'query': query               # Envia o termo de volta para o template
+    })
 # -------------------------------------------------------------------
 # VIEW: Detalhe
 # -------------------------------------------------------------------
