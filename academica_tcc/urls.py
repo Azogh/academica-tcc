@@ -11,6 +11,9 @@ urlpatterns = [
     path('', include('core.urls')), 
     
     path('', include(('upload.urls', 'upload'), namespace='upload')),
+
+    path('', include(('analytics.urls', 'analytics'), namespace='analytics')),
+    
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

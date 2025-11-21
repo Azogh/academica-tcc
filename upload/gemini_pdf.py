@@ -9,7 +9,7 @@ genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 def extrair_disciplinas_gemini(pdf_file):
     """
-    Extrai disciplinas de um PDF de histórico usando o Gemini 1.5 Flash.
+    Extrai disciplinas de um PDF de histórico usando o Gemini 2.5 Flash.
     Retorna uma lista de dicionários ou None em caso de erro.
     """
 

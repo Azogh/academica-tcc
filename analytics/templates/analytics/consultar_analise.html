@@ -1,0 +1,179 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Resultado da Análise{% endblock %}
+{% block page_title %}Análise de Histórico - Resultado{% endblock %}
+
+{% block content %}
+
+<style>
+    /* --- CLASSES DE MENSAGEM --- */
+    .msg-box {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid transparent;
+    }
+    .msg-success {
+        background-color: #d4edda;
+        color: #155724;
+        border-color: #c3e6cb;
+    }
+    .msg-error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border-color: #f5c6cb;
+    }
+
+    /* --- ESTILOS DA GRADE --- */
+    .timetable {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+    .timetable th, .timetable td {
+        border: 1px solid var(--border-color);
+        padding: 10px;
+        text-align: center;
+        height: 120px;
+        vertical-align: top;
+        width: 16.66%;
+    }
+    .timetable th {
+        background-color: var(--card-bg-color);
+        color: var(--accent-color);
+        font-size: 1.1em;
+    }
+    .timetable td {
+        background-color: var(--input-bg-color);
+        position: relative;
+    }
+    .time-slot {
+        font-weight: bold;
+        color: #fff;
+        background-color: var(--card-bg-color) !important; /* Força a cor da coluna 1 */
+        vertical-align: middle !important;
+        font-size: 1.2em;
+    }
+    
+    /* Card da Disciplina dentro da célula */
+    .discipline-block {
+        background-color: var(--cta-bg-color);
+        color: #fff;
+        padding: 8px;
+        border-radius: 5px;
+        font-size: 0.9em;
+        text-align: left;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .discipline-block strong {
+        display: block;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        padding-bottom: 4px;
+        margin-bottom: 4px;
+        font-size: 1em;
+    }
+    .semestre-badge {
+        font-size: 0.8em;
+        background: rgba(0,0,0,0.2);
+        padding: 2px 6px;
+        border-radius: 4px;
+        align-self: flex-end;
+        margin-bottom: 5px;
+    }
+</style>
+
+<!-- MENSAGENS DE SUCESSO/ERRO -->
+{% if messages %}
+<div style="margin-bottom: 20px;">
+    {% for message in messages %}
+        <div class="msg-box {% if message.tags == 'success' %}msg-success{% else %}msg-error{% endif %}">
+            {% if message.tags == 'success' %}
+                <i class="fas fa-check-circle"></i>
+            {% else %}
+                <i class="fas fa-exclamation-circle"></i>
+            {% endif %}
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <a href="{% url 'analytics:analisar_historico' historico_pk=analise.historico.pk %}" class="cancel-button">
+        <i class="fas fa-arrow-left"></i> Voltar (Refazer Análise)
+    </a>
+    
+    <div>
+        <a href="{% url 'analytics:editar_analise' analise_pk=analise.pk %}" class="cta-button" style="background-color: #ffc107; color: #000; margin-right: 10px;">
+            <i class="fas fa-pencil-alt"></i> Editar Grade
+        </a>
+        
+        <a href="#" class="cta-button">
+            <i class="fas fa-print"></i> Imprimir Solicitação
+        </a>
+    </div>
+</div>
+
+<div class="aluno-info" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
+    <p><strong>Aluno:</strong> {{ analise.historico.aluno.nome }}</p>
+    <p><strong>Matrícula:</strong> {{ analise.historico.aluno.matricula }}</p>
+    <p><strong>Tipo de Análise:</strong> {{ analise.get_tipo_analise_display }}</p>
+    <p><strong>Dias Excluídos:</strong> {{ analise.dias_excluidos|default:"Nenhum" }}</p>
+</div>
+
+<h2 style="text-align: left; font-size: 1.5em; margin-bottom: 20px;">Grade Horária Sugerida</h2>
+
+<table class="timetable">
+    <thead>
+        <tr>
+            <th>Horário</th>
+            <th>Segunda</th>
+            <th>Terça</th>
+            <th>Quarta</th>
+            <th>Quinta</th>
+            <th>Sexta</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- LOOP PRINCIPAL: Gera as linhas da tabela dinamicamente -->
+        {% for linha in grade_montada %}
+        <tr>
+            <!-- Coluna do Horário (ex: 1-2) -->
+            <td class="time-slot">Período {{ linha.label }}</td>
+            
+            <!-- Loop pelos dias da semana (células) -->
+            {% for item in linha.celulas %}
+                <td>
+                    {% if item %}
+                        <div class="discipline-block">
+                            <span class="semestre-badge">{{ item.disciplina.semestre }}ºS</span>
+                            <strong>{{ item.disciplina.nome }}</strong>
+                            <div style="margin-top: 5px;">
+                                <small>{{ item.disciplina.sigla }}</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                </td>
+            {% endfor %}
+        </tr>
+        {% empty %}
+        <!-- Se a lista estiver vazia, mostra mensagem padrão -->
+        <tr>
+            <td colspan="6" style="padding: 30px; color: #888; background-color: var(--input-bg-color);">
+                <i class="fas fa-info-circle"></i> Nenhuma sugestão gerada ou erro na montagem da grade.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

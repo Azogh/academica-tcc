@@ -1,0 +1,234 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Análise de Histórico{% endblock %}
+{% block page_title %}Análise de Histórico{% endblock %}
+
+{% block content %}
+
+<style>
+    /* --- CSS DAS MENSAGENS (ALERTAS) --- */
+    .messages-container {
+        margin-bottom: 20px;
+    }
+    
+    .msg-box {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid transparent; /* Borda base */
+    }
+
+    .msg-error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border-color: #f5c6cb;
+    }
+
+    .msg-success {
+        background-color: #d4edda;
+        color: #155724;
+        border-color: #c3e6cb;
+    }
+
+    .msg-info {
+        background-color: #cce5ff;
+        color: #004085;
+        border-color: #b8daff;
+    }
+
+    /* --- ESTILOS ORIGINAIS DA PÁGINA --- */
+    .analise-opcoes {
+        background-color: var(--card-bg-color);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .analise-opcoes h3 {
+        color: var(--accent-color);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        justify-content: space-around;
+        gap: 10px;
+    }
+    .checkbox-group label {
+        background: var(--input-bg-color);
+        padding: 10px 15px;
+        border-radius: 5px;
+        border: 2px solid var(--border-color);
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+    .checkbox-group input[type="checkbox"] {
+        margin-right: 8px;
+    }
+    .checkbox-group input[type="checkbox"]:checked + span {
+        font-weight: bold;
+        color: var(--cta-bg-color);
+    }
+    
+    .checkbox-group-vertical label {
+        display: block;
+        background: var(--input-bg-color);
+        padding: 15px;
+        border-radius: 5px;
+        border: 2px solid var(--border-color);
+        cursor: pointer;
+        margin-bottom: 10px;
+        transition: all 0.2s ease-in-out;
+    }
+    .checkbox-group-vertical label:hover {
+        border-color: var(--accent-color);
+    }
+    .checkbox-group-vertical input[type="checkbox"] {
+        margin-right: 10px;
+        transform: scale(1.1);
+        vertical-align: middle;
+    }
+    .checkbox-group-vertical label span {
+        vertical-align: middle;
+    }
+    .checkbox-group-vertical label .checkbox-desc {
+        display: block;
+        font-size: 0.9em;
+        color: #aaa;
+        padding-left: 32px;
+        margin-top: 4px;
+    }
+    .checkbox-group-vertical label.checked-label {
+        border-color: var(--cta-bg-color);
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+</style>
+
+{% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+            <div class="msg-box {% if message.tags == 'error' %}msg-error{% elif message.tags == 'success' %}msg-success{% else %}msg-info{% endif %}">
+                
+                {% if message.tags == 'error' %}
+                    <i class="fas fa-exclamation-circle" style="font-size: 1.2em;"></i> 
+                {% else %}
+                    <i class="fas fa-check-circle" style="font-size: 1.2em;"></i>
+                {% endif %}
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+<div class="aluno-info" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
+    <p><strong>Aluno:</strong> {{ historico.aluno.nome }}</p>
+    <p><strong>Matrícula:</strong> {{ historico.aluno.matricula }}</p>
+    <p><strong>Curso:</strong> {{ historico.aluno.curso }}</p>
+</div>
+
+<form method="POST" class="form-container">
+    {% csrf_token %}
+
+    <div class="analise-opcoes">
+        <h3>Tipo de Análise</h3>
+        <div class="checkbox-group-vertical"> 
+            
+            <label for="analise_padrao">
+                <input type="checkbox" id="analise_padrao" name="tipo_analise" value="padrao" checked>
+                <span style="font-size: 1.1em;"><strong>Padrão</strong></span>
+                <span class="checkbox-desc">(Ordem regular, encaixando horários)</span>
+            </label>
+            
+            <label for="analise_soft">
+                <input type="checkbox" id="analise_soft" name="tipo_analise" value="soft">
+                <span style="font-size: 1.1em;"><strong>Soft</strong></span>
+                <span class="checkbox-desc">(Disciplinas mais fáceis, maior aprovação)</span>
+            </label>
+            
+            <label for="analise_hard">
+                <input type="checkbox" id="analise_hard" name="tipo_analise" value="hard">
+                <span style="font-size: 1.1em;"><strong>Hardcore</strong></span>
+                <span class="checkbox-desc">(Máximo de disciplinas e pré-requisitos)</span>
+            </label>
+        </div>
+    </div>
+
+    <div class="analise-opcoes">
+        <h3>Excluir Dias da Semana</h3>
+        <p>Marque os dias que o aluno NÃO pode cursar (ex: trabalho).</p>
+        <div class="checkbox-group"> <label for="dia_seg">
+                <input type="checkbox" id="dia_seg" name="dias_excluidos" value="SEG">
+                <span>Segunda-feira</span>
+            </label>
+            <label for="dia_ter">
+                <input type="checkbox" id="dia_ter" name="dias_excluidos" value="TER">
+                <span>Terça-feira</span>
+            </label>
+            <label for="dia_qua">
+                <input type="checkbox" id="dia_qua" name="dias_excluidos" value="QUA">
+                <span>Quarta-feira</span>
+            </label>
+            <label for="dia_qui">
+                <input type="checkbox" id="dia_qui" name="dias_excluidos" value="QUI">
+                <span>Quinta-feira</span>
+            </label>
+            <label for="dia_sex">
+                <input type="checkbox" id="dia_sex" name="dias_excluidos" value="SEX">
+                <span>Sexta-feira</span>
+            </label>
+        </div>
+    </div>
+
+    <div class="button-group">
+        <button type="submit" class="cta-button">
+            <i class="fas fa-cogs"></i> Processar Análise
+        </button>
+    </div>
+</form>
+
+<script>
+    // Seleciona todos os checkboxes de TIPO de análise
+    const tipoCheckboxes = document.querySelectorAll('input[name="tipo_analise"]');
+    const tipoLabels = document.querySelectorAll('.checkbox-group-vertical label');
+
+    function updateLabelStyles() {
+        tipoLabels.forEach((label) => {
+            const input = label.querySelector('input[type="checkbox"]');
+            if (input.checked) {
+                label.classList.add('checked-label');
+            } else {
+                label.classList.remove('checked-label');
+            }
+        });
+    }
+
+    tipoCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener('click', function() {
+            // Lógica de "Radio Button" (só pode marcar um)
+            tipoCheckboxes.forEach((other) => {
+                if (other !== checkbox) {
+                    other.checked = false;
+                }
+            });
+
+            // Garante que pelo menos um está marcado
+            let oneIsChecked = Array.from(tipoCheckboxes).some(c => c.checked);
+            if (!oneIsChecked) {
+                checkbox.checked = true;
+            }
+
+            // Atualiza os estilos visuais
+            updateLabelStyles();
+        });
+    });
+
+    // Atualiza o estilo visual assim que a página carregar
+    updateLabelStyles();
+</script>
+
+{% endblock %}

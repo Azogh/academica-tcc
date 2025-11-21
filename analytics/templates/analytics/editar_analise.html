@@ -1,0 +1,111 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Editar Análise{% endblock %}
+{% block page_title %}Editar Grade Sugerida{% endblock %}
+
+{% block content %}
+<style>
+    .table-edit {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: var(--card-bg-color);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .table-edit th, .table-edit td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .table-edit th {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: var(--accent-color);
+        font-weight: 600;
+    }
+    .table-edit tr:hover {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+    
+    /* Checkbox customizado maior */
+    .big-checkbox {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: var(--cta-bg-color);
+    }
+
+    .badge-dia {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: bold;
+        background-color: var(--input-bg-color);
+        border: 1px solid var(--border-color);
+    }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <a href="{% url 'analytics:consultar_analise' analise_pk=analise.pk %}" class="cancel-button">
+        <i class="fas fa-arrow-left"></i> Cancelar Edição
+    </a>
+</div>
+
+<div class="form-container">
+    <div class="aluno-info" style="margin-bottom: 20px;">
+        <p><strong>Aluno:</strong> {{ analise.historico.aluno.nome }}</p>
+        <p><strong>Análise Original:</strong> {{ analise.get_tipo_analise_display }}</p>
+        <p style="color: #aaa; font-size: 0.9em;">Marque ou desmarque as caixas para montar a grade final.</p>
+    </div>
+    
+    <form method="POST">
+        {% csrf_token %}
+        
+        <table class="table-edit">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">#</th>
+                    <th>Disciplina</th>
+                    <th>Dia da Semana</th>
+                    <th>Período</th>
+                    <th>Semestre Ideal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for horario in todos_horarios %}
+                <tr {% if horario.marcado %}style="background-color: rgba(40, 167, 69, 0.15);"{% endif %}>
+                    <td style="text-align: center;">
+                        <input type="checkbox" 
+                               name="horarios_selecionados" 
+                               value="{{ horario.pk }}" 
+                               class="big-checkbox"
+                               {% if horario.marcado %}checked{% endif %}>
+                    </td>
+                    <td>
+                        <strong>{{ horario.disciplina.nome }}</strong><br>
+                        <small style="color: #888;">{{ horario.disciplina.sigla }}</small>
+                    </td>
+                    <td>
+                        <span class="badge-dia">{{ horario.dia_semana }}</span>
+                    </td>
+                    <td>{{ horario.periodo }}</td>
+                    <td>{{ horario.disciplina.semestre }}º Semestre</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px;">
+                        Nenhum horário disponível cadastrado no sistema.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="button-group" style="margin-top: 30px;">
+            <button type="submit" class="cta-button">
+                <i class="fas fa-save"></i> Salvar Grade
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

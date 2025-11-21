@@ -88,6 +88,8 @@ class MatrizCurricular(models.Model):
         """Retorna o nome da matriz e o ano de referência."""
         return f"{self.nome} ({self.ano_referencia})"
 
+# Em: academica-tcc/core/models.py
+
 class Disciplinas(models.Model):
     """
     Lista de disciplinas vinculadas a uma Matriz Curricular.
@@ -108,6 +110,15 @@ class Disciplinas(models.Model):
         verbose_name="Criado por"
     )
     
+    # 👇👇👇 ADICIONE ESTE CAMPO NOVO 👇👇👇
+    pre_requisitos = models.ManyToManyField(
+        'self', 
+        symmetrical=False, 
+        blank=True, 
+        verbose_name="Pré-requisitos"
+    )
+    # 👆👆👆 FIM DO CAMPO NOVO 👆👆👆
+    
     class Meta:
         db_table = 'DISCIPLINAS'
         verbose_name = "Disciplina"
@@ -116,7 +127,7 @@ class Disciplinas(models.Model):
     def __str__(self):
         """Retorna o nome da disciplina."""
         return self.nome
-
+    
 # ====================================================================
 # Modelos de Oferta e Horários (Domínio: Turmas e Grade)
 # ====================================================================
