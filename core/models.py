@@ -1,16 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-<<<<<<< HEAD
 # ====================================================================
 # Modelos de Usuário (Autenticação e Permissão)
 # ====================================================================
-=======
-# Modelo USUARIO (Tabela USUARIO)
-class Usuario(AbstractUser):
-    gestao_inicio = models.IntegerField(null=True, blank=True)
-    portaria = models.CharField(max_length=15, null=True, blank=True)
->>>>>>> 928ea7b5e7244cd38faaea9f4c500a753caba395
 
 class Usuario(AbstractUser):
     """
@@ -117,14 +110,13 @@ class Disciplinas(models.Model):
         verbose_name="Criado por"
     )
     
-    # 👇👇👇 ADICIONE ESTE CAMPO NOVO 👇👇👇
+    # Campo de auto-relacionamento para pré-requisitos
     pre_requisitos = models.ManyToManyField(
         'self', 
         symmetrical=False, 
         blank=True, 
         verbose_name="Pré-requisitos"
     )
-    # 👆👆👆 FIM DO CAMPO NOVO 👆👆👆
     
     class Meta:
         db_table = 'DISCIPLINAS'
@@ -197,4 +189,3 @@ class Horario(models.Model):
     def __str__(self):
         """Retorna a descrição completa do horário."""
         return f"Turma: {self.turma.nome} | Disciplina: {self.disciplina.sigla} | Dia: {self.dia_semana}"
-
