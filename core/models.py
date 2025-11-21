@@ -1,9 +1,16 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+<<<<<<< HEAD
 # ====================================================================
 # Modelos de Usuário (Autenticação e Permissão)
 # ====================================================================
+=======
+# Modelo USUARIO (Tabela USUARIO)
+class Usuario(AbstractUser):
+    gestao_inicio = models.IntegerField(null=True, blank=True)
+    portaria = models.CharField(max_length=15, null=True, blank=True)
+>>>>>>> 928ea7b5e7244cd38faaea9f4c500a753caba395
 
 class Usuario(AbstractUser):
     """

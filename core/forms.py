@@ -130,5 +130,24 @@ class HorarioForm(forms.ModelForm):
             'periodo': 'Período (Ex: 1-2 ou 3-4)',
         }
 
+<<<<<<< HEAD
 # O formulário HistoricoUploadForm foi removido deste arquivo e transferido 
 # para 'upload/forms.py', respeitando a modularização.
+=======
+# Formulário para Upload de Histórico
+class HistoricoUploadForm(forms.Form):
+    # Campos de texto para dados do aluno
+    nome_aluno = forms.CharField(label='Nome Completo', max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'Nome do estudante'}))
+    matricula = forms.CharField(label='Matrícula', max_length=10, required=True, widget=forms.TextInput(attrs={'placeholder': 'Número da matrícula'}))
+    
+    # Campo de seleção para Curso (usando a lista existente)
+    curso = forms.ChoiceField(choices=[('', 'Selecione o Curso')] + CURSO_CHOICES, label='Curso', required=True)
+    
+    # Campo de arquivo para o PDF
+    pdf_file = forms.FileField(
+        label='Escolher Arquivo PDF', 
+        required=True, 
+        widget=forms.FileInput(attrs={'style': 'display: none;'})
+    )
+    
+>>>>>>> 928ea7b5e7244cd38faaea9f4c500a753caba395
