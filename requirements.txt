@@ -6,6 +6,7 @@ pypdf2
 pdfplumber
 unidecode
 
+
 # Pacote para a API de IA do Google (Gemini)
 google-generativeai
 python-dotenv
