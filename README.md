@@ -1,34 +1,115 @@
-# Acadêmica: Sistema de Rematrículas Inteligente
+# 🎓 Acadêmica: Sistema Inteligente de Apoio à Matrícula
 
-## 🎓 Sobre o Projeto
+> **Trabalho de Conclusão de Curso (TCC)**
+> Um sistema web para auxiliar coordenadores de curso na análise de históricos escolares e sugestão de grades horárias utilizando Inteligência Artificial.
 
-O **Acadêmica** é um sistema inteligente desenvolvido como Trabalho de Conclusão de Curso (TCC) para modernizar e agilizar o processo de rematrícula em instituições de ensino. O foco principal é fornecer uma ferramenta robusta para coordenadores de curso.
+## 🚀 Sobre o Projeto
 
-### Problema Resolvido
+O **Acadêmica** é uma plataforma desenvolvida para otimizar o processo de rematrícula e gestão acadêmica. O sistema permite que o coordenador cadastre a estrutura curricular, importe históricos escolares (PDF) e utilize a IA (Google Gemini) para gerar sugestões de matrícula personalizadas, respeitando pré-requisitos, choques de horário e preferências do aluno.
 
-Tradicionalmente, a análise de históricos escolares para rematrícula é um processo manual, lento e suscetível a erros. O Acadêmica automatiza essa burocracia.
+### ✨ Principais Funcionalidades
 
-### Funcionalidades Chave
+#### 1. 🔐 Módulo Administrativo (Core)
+* **Autenticação Segura:** Login, Logout e Recuperação de Senha.
+* **Dashboard Interativo:** Gráficos (Chart.js) com dados reais sobre disciplinas, turmas e índices de ocupação.
+* **Gestão Acadêmica (CRUDs):**
+    * **Matrizes Curriculares:** Cadastro com versionamento.
+    * **Disciplinas:** Vínculo com matrizes e sistema de **Pré-requisitos Inteligente** (Select2).
+    * **Turmas & Horários:** Cadastro de ofertas com **validação automática de conflitos** e suporte a disciplinas de 4 créditos (cadastro duplo automático).
 
-* **Importação e Análise de Históricos:** Carregue históricos escolares em PDF e o sistema extrai automaticamente os dados.
-* **Sugestões Inteligentes de Matrícula (IA):** Utilize algoritmos para sugerir as disciplinas mais adequadas para o aluno no próximo semestre, com base em seu histórico e na matriz curricular do curso.
-* **Gestão Completa de Base:** Controle de Matrizes Curriculares, Disciplinas, Turmas e Horários.
-* **Geração de Documentos:** Exporte a solicitação de rematrícula formalizada pelo sistema.
+#### 2. 📂 Módulo de Processamento (Upload)
+* **Leitura de PDF:** Extração automática de dados de alunos e notas a partir de históricos escolares em formato PDF.
+* **Parser Inteligente:** Identificação de disciplinas cursadas, aprovadas e pendentes.
 
-## 🚀 Guia de Início Rápido (Docker)
+#### 3. 🧠 Módulo de Inteligência (Analytics)
+* **IA Generativa (Gemini 1.5/2.5):** Analisa o perfil do aluno e sugere a grade ideal.
+* **Modos de Análise:**
+    * ⚖️ **Padrão:** Segue o fluxo regular da matriz.
+    * 🪶 **Soft:** Prioriza disciplinas com menor carga/maior aprovação.
+    * 🔥 **Hardcore:** Maximiza o número de créditos para adiantar o curso.
+* **Edição de Grade com UX Avançada:**
+    * Bloqueio visual automático de horários conflitantes ("Lógica Contagiosa").
+    * Seleção inteligente de disciplinas de 4 créditos (marcação em bloco).
 
-O projeto é empacotado usando Docker para garantir um ambiente consistente e portátil.
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+* **Backend:** Python 3.12, Django 5.2.
+* **Banco de Dados:** SQLite (Dev).
+* **Frontend:** HTML5, CSS3 (Glassmorphism UI), Bootstrap, JavaScript.
+* **Bibliotecas JS:** Chart.js (Dashboards), Select2 (Inputs avançados).
+* **IA:** Google Generative AI SDK (Gemini).
+* **PDF:** PyPDF2 / PDFPlumber (para extração de dados).
+
+---
+
+## ⚙️ Instalação e Configuração
 
 ### Pré-requisitos
+* Python 3.10+ instalado.
+* Git.
 
-Certifique-se de ter instalado em sua máquina:
+### Passo a Passo
 
-1.  **Git**
-2.  **Docker** e **Docker Compose**
+1.  **Clone o repositório**
+    ```bash
+    git clone [https://github.com/seu-usuario/academica-tcc.git](https://github.com/seu-usuario/academica-tcc.git)
+    cd academica-tcc
+    ```
 
-### 1. Clonar o Repositório
+2.  **Crie e ative o ambiente virtual**
+    ```bash
+    # Windows
+    python -m venv venv
+    venv\Scripts\activate
 
-```bash
-git clone URL_DO_SEU_REPOSITORIO/academica-tcc
-cd academica-tcc
+    # Linux/Mac
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
 
+3.  **Instale as dependências**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4.  **Configure as Variáveis de Ambiente**
+    Crie um arquivo `.env` na raiz do projeto e adicione sua chave da API do Google:
+    ```env
+    GOOGLE_API_KEY="sua-chave-aqui"
+    DEBUG=True
+    SECRET_KEY="sua-chave-secreta-django"
+    ```
+
+5.  **Prepare o Banco de Dados**
+    ```bash
+    python manage.py makemigrations
+    python manage.py migrate
+    ```
+
+6.  **Crie um Superusuário (Opcional)**
+    Para acessar o /admin do Django:
+    ```bash
+    python manage.py createsuperuser
+    ```
+
+7.  **Execute o Projeto**
+    ```bash
+    python manage.py runserver
+    ```
+    Acesse em: `http://127.0.0.1:8000`
+
+---
+
+## 📸 Screenshots
+
+*(Coloque aqui prints das telas principais: Dashboard, Edição de Análise e Cadastro de Horários)*
+
+---
+
+## 📝 Licença
+
+Este projeto foi desenvolvido para fins acadêmicos.
+
+---
