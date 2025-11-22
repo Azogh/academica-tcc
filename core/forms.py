@@ -145,3 +145,30 @@ class HorarioForm(forms.ModelForm):
             'dia_semana': forms.Select(attrs={'class': 'form-control'}),
             'periodo': forms.Select(attrs={'class': 'form-control'}),
         }
+
+    def clean(self):
+        """
+        Validação customizada para impedir choque de horários na mesma turma.
+        """
+        cleaned_data = super().clean()
+        turma = cleaned_data.get('turma')
+        dia_semana = cleaned_data.get('dia_semana')
+        periodo = cleaned_data.get('periodo')
+        
+        # Se os campos básicos foram preenchidos, verifica conflito
+        if turma and dia_semana and periodo:
+            # Busca se já existe algum horário para essa turma, nesse dia e período
+            # O .exclude(pk=self.instance.pk) é importante para permitir a EDIÇÃO do próprio registro sem dar erro
+            conflito = Horario.objects.filter(
+                turma=turma, 
+                dia_semana=dia_semana, 
+                periodo=periodo
+            ).exclude(pk=self.instance.pk).first()
+
+            if conflito:
+                # Aqui Mensagem de erro
+                raise forms.ValidationError(
+                    f"Conflito de Horário! A disciplina '{conflito.disciplina.nome}' já está cadastrada para a turma {turma.nome} neste dia e período."
+                )
+        
+        return cleaned_data

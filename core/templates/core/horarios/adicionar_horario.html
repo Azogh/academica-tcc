@@ -6,12 +6,31 @@
 {% block content %}
     <form method="post">
         {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div style="background-color: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; color: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                {% for error in form.non_field_errors %}
+                    <i class="fas fa-exclamation-triangle" style="margin-right: 8px; color: #ffb703;"></i>
+                    <strong>{{ error }}</strong>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         {% for field in form %}
         <div class="form-group">
             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
             {{ field }}
+            
+            {% if field.errors %}
+                <ul style="list-style: none; padding: 0; margin-top: 5px; color: #ffb703; font-size: 0.9em;">
+                    {% for error in field.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
         </div>
         {% endfor %}
+
         <div class="form-buttons">
             <a href="{% url 'listar_horarios' %}" class="cancel-button">Cancelar</a>
             <button type="submit" class="cta-button">Salvar</button>

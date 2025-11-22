@@ -1,95 +1,232 @@
 {% extends 'core/base.html' %}
-{% load static %}
-{% load dict_filters %}
+{% load dict_filters %} 
 
 {% block title %}Consultar Horários{% endblock %}
+{% block page_title %}Grade de Horários{% endblock %}
 
 {% block content %}
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <a href="{% url 'painel' %}" class="cancel-button">Voltar</a>
-        <h1 style="margin: 0; text-align: center; flex-grow: 1;">Consultar Horários</h1>
-        <a href="{% url 'adicionar_horario' %}" class="cta-button">Adicionar</a>
-    </div>
+<style>
+    /* Área de Filtros */
+    .filter-container {
+        background-color: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 25px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
 
-    <div class="content-card">
-        <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 1.2em;">Filtros</h2>
-                <a href="#" id="filter-toggle" style="font-size: 1.5em; color: var(--text-color);"><i class="fas fa-filter"></i></a>
-            </div>
-            
-            <div id="filter-container" style="display: none; flex-direction: row; flex-wrap: wrap; align-items: flex-end; gap: 15px; padding-bottom: 20px;">
-                <form method="get" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; flex-grow: 1;">
-                    <div class="form-group" style="flex: 1;">
-                        <label for="curso_filter">Curso:</label>
-                        <select name="curso" id="curso_filter">
-                            <option value="">Todos</option>
-                            {% for curso in cursos %}
-                                <option value="{{ curso }}" {% if request.GET.curso == curso %}selected{% endif %}>{{ curso }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label for="ano_filter">Ano de Referência:</label>
-                        <select name="ano" id="ano_filter">
-                            <option value="">Todos</option>
-                            {% for ano in anos %}
-                                <option value="{{ ano }}" {% if request.GET.ano == ano|slugify %}selected{% endif %}>{{ ano }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group" style="display: flex; gap: 10px;">
-                        <button type="submit" class="cta-button">Filtrar</button>
-                        <a href="{% url 'consultar_horarios' %}" class="cancel-button">Limpar</a>
-                    </div>
-                </form>
-            </div>
-        </div>
+    .filter-row {
+        display: flex;
+        gap: 20px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .filter-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #fff;
+        font-weight: 500;
+        font-size: 0.9em;
+    }
+
+    .filter-select {
+        width: 100%;
+        padding: 12px 15px;
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 1em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-select:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+        border-color: #ffb703;
+    }
+
+    .filter-select option {
+        background-color: #2c3e50; /* Cor de fundo para as opções no dropdown */
+        color: #fff;
+    }
+
+    .btn-filtrar {
+        padding: 12px 30px;
+        background-color: #ffb703;
+        color: #2c3e50;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+        height: 46px; /* Para alinhar com os inputs */
+    }
+    
+    .btn-filtrar:hover {
+        background-color: #fb8500;
+        transform: translateY(-2px);
+    }
+
+    /* Tabela de Horários */
+    .schedule-wrapper {
+        overflow-x: auto;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        padding: 5px;
+    }
+
+    .schedule-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 5px;
+        min-width: 800px; /* Garante que não quebre em telas pequenas */
+    }
+
+    .schedule-table th {
+        background-color: rgba(106, 17, 203, 0.4);
+        color: #fff;
+        padding: 15px;
+        text-align: center;
+        border-radius: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.85em;
+    }
+
+    .schedule-table .periodo-col {
+        background-color: rgba(255, 255, 255, 0.1);
+        font-weight: bold;
+        color: #ffb703;
+        width: 100px;
+    }
+
+    .schedule-cell {
+        background-color: rgba(255, 255, 255, 0.08);
+        padding: 15px;
+        text-align: center;
+        border-radius: 8px;
+        vertical-align: middle;
+        height: 80px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .schedule-cell:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .has-class {
+        background-color: rgba(46, 204, 113, 0.15); /* Verde suave para aulas */
+        border: 1px solid rgba(46, 204, 113, 0.3);
+    }
+
+    .disciplina-tag {
+        font-weight: bold;
+        display: block;
+        font-size: 1.1em;
+        margin-bottom: 5px;
+        color: #fff;
+    }
+
+    .disciplina-nome {
+        font-size: 0.75em;
+        color: rgba(255,255,255,0.7);
+        display: block;
+        line-height: 1.2;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 50px;
+        color: rgba(255,255,255,0.5);
+    }
+</style>
+
+<form method="get" class="filter-container">
+    <div class="filter-row">
         
-        <table style="margin-top: 30px;">
+        <div class="filter-group">
+            <label for="curso">1º Selecione o Curso (Filtro)</label>
+            <select name="curso" id="curso" class="filter-select" onchange="this.form.submit()">
+                <option value="">Todos os Cursos</option>
+                {% for curso in cursos_disponiveis %}
+                    <option value="{{ curso }}" {% if curso == curso_selecionado %}selected{% endif %}>
+                        {{ curso }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="turma">2º Selecione a Turma (Obrigatório)</label>
+            <select name="turma" id="turma" class="filter-select">
+                <option value="">-- Selecione uma Turma --</option>
+                {% for turma in turmas_disponiveis %}
+                    <option value="{{ turma.id }}" {% if turma.id == turma_selecionada %}selected{% endif %}>
+                        {{ turma.nome }} (Ingresso: {{ turma.ano_ingresso }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn-filtrar">
+            <i class="fas fa-search"></i> Buscar Horário
+        </button>
+    </div>
+</form>
+
+{% if turma_selecionada %}
+    <div class="schedule-wrapper">
+        <h3 style="margin-bottom: 20px; text-align: center; color: #ffb703;">
+            Grade Horária - {% for t in turmas_disponiveis %}{% if t.id == turma_selecionada %}{{ t.nome }}{% endif %}{% endfor %}
+        </h3>
+        
+        <table class="schedule-table">
             <thead>
                 <tr>
                     <th>Período</th>
-                    <th>Segunda</th>
-                    <th>Terça</th>
-                    <th>Quarta</th>
-                    <th>Quinta</th>
-                    <th>Sexta</th>
+                    {% for dia_sigla, dia_nome in dias_semana %}
+                        <th>{{ dia_nome }}</th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tbody>
-                {% for periodo in periodos %}
+                {% for periodo_sigla, periodo_nome in periodos %}
                 <tr>
-                    <td>{{ periodo }}</td>
-                    {% for dia in dias_semana %}
-                        <td>
-                            {% if grade|get_item:dia|get_item:periodo %}
-                                {{ grade|get_item:dia|get_item:periodo }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
+                    <th class="periodo-col">{{ periodo_nome }}</th>
+                    
+                    {% for dia_sigla, dia_nome in dias_semana %}
+                        {% with celula=grade|get_item:dia_sigla|get_item:periodo_sigla %}
+                            <td class="schedule-cell {% if celula %}has-class{% endif %}">
+                                {% if celula %}
+                                    <span class="disciplina-tag">{{ celula.disciplina }}</span>
+                                    <span class="disciplina-nome">{{ celula.nome_completo }}</span>
+                                {% else %}
+                                    <span style="color: rgba(255,255,255,0.1);">-</span>
+                                {% endif %}
+                            </td>
+                        {% endwith %}
                     {% endfor %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+{% else %}
+    <div class="empty-state">
+        <i class="fas fa-calendar-times" style="font-size: 4em; margin-bottom: 20px;"></i>
+        <h3>Selecione uma turma acima para visualizar a grade.</h3>
+    </div>
+{% endif %}
 
-    <script>
-        document.getElementById('filter-toggle').addEventListener('click', function(e) {
-            e.preventDefault();
-            const filterContainer = document.getElementById('filter-container');
-            const icon = this.querySelector('i');
-            if (filterContainer.style.display === 'none' || filterContainer.style.display === '') {
-                filterContainer.style.display = 'flex';
-                icon.classList.remove('fa-filter');
-                icon.classList.add('fa-times');
-            } else {
-                filterContainer.style.display = 'none';
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-filter');
-            }
-        });
-    </script>
 {% endblock %}

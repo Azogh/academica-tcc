@@ -305,31 +305,67 @@ def excluir_horario(request, pk):
         return redirect('listar_horarios')
     return render(request, 'core/horarios/excluir_horario.html', {'horario': horario})
 
+# core/views.py
+
 @login_required
 def consultar_horarios(request):
-    horarios_list = Horario.objects.all()
-    curso = request.GET.get('curso')
-    ano_ingresso = request.GET.get('ano')
-    if curso:
-        horarios_list = horarios_list.filter(turma__matriz_curricular__curso=curso)
-    if ano_ingresso:
-        horarios_list = horarios_list.filter(turma__ano_ingresso=ano_ingresso)
+    """
+    Exibe a grade de horários filtrada por Turma para evitar conflitos visuais.
+    """
+    # 1. Captura os filtros da URL (GET)
+    curso_selecionado = request.GET.get('curso')
+    turma_id_selecionada = request.GET.get('turma')
+
+    # 2. Dados para popular os Selects (Dropdowns)
+    # Buscamos cursos distintos nas Matrizes
+    cursos_disponiveis = MatrizCurricular.objects.values_list('curso', flat=True).distinct().order_by('curso')
+    
+    # Buscamos Turmas. 
+    # Se um curso foi selecionado, filtramos as turmas que têm aulas nesse curso 
+    # (via Horario -> Disciplina -> Matriz -> Curso) para facilitar a vida do usuário.
+    if curso_selecionado:
+        turmas_disponiveis = Turma.objects.filter(
+            horario__disciplina__matriz_curricular__curso=curso_selecionado
+        ).distinct().order_by('-ano_ingresso')
+    else:
+        turmas_disponiveis = Turma.objects.all().order_by('-ano_ingresso')
+
+    # 3. Construção da Grade
+    # A grade começa vazia ou zerada
     grade_horarios = {}
-    dias_semana = Horario.DIA_CHOICES
-    periodos = Horario.PERIODO_CHOICES
+    dias_semana = Horario.DIA_CHOICES      # [('SEG', 'Segunda'), ...]
+    periodos = Horario.PERIODO_CHOICES     # [('1-2', 'Período 1 e 2'), ...]
+
+    # Inicializa a estrutura vazia da grade
     for dia_sigla, _ in dias_semana:
         grade_horarios[dia_sigla] = {periodo_sigla: None for periodo_sigla, _ in periodos}
-    for horario in horarios_list:
-        grade_horarios[horario.dia_semana][horario.periodo] = horario.disciplina.sigla
-    cursos = MatrizCurricular.objects.values_list('curso', flat=True).distinct()
-    anos_turma = Turma.objects.values_list('ano_ingresso', flat=True).distinct()
+
+    # Só preenchemos a grade se uma TURMA específica for selecionada
+    horarios_filtrados = []
+    
+    if turma_id_selecionada:
+        horarios_filtrados = Horario.objects.filter(turma__id=turma_id_selecionada)
+        
+        for h in horarios_filtrados:
+            # Preenche a célula: [Dia][Periodo] = "Sigla Disciplina (Nome Professor/Sala se tivesse)"
+            # Aqui estamos colocando a Sigla + Nome da disciplina para ficar claro
+            conteudo_celula = {
+                'disciplina': f"{h.disciplina.sigla}",
+                'nome_completo': h.disciplina.nome,
+                'codigo': h.disciplina.codigo
+            }
+            grade_horarios[h.dia_semana][h.periodo] = conteudo_celula
+
     return render(request, 'core/horarios/consultar_horarios.html', {
         'grade': grade_horarios,
-        'dias_semana': [dia[0] for dia in dias_semana],
-        'periodos': [periodo[0] for periodo in periodos],
-        'cursos': cursos,
-        'anos': anos_turma
+        'dias_semana': dias_semana,
+        'periodos': periodos,
+        'cursos_disponiveis': cursos_disponiveis,
+        'turmas_disponiveis': turmas_disponiveis,
+        'curso_selecionado': curso_selecionado,
+        'turma_selecionada': turma_id_selecionada and int(turma_id_selecionada),
     })
+
 @login_required
 def chart_data_view(request):
     """
