@@ -39,4 +39,37 @@ urlpatterns = [
     # URLs de Dados para Dashboards e Análise (Módulo Core)
     path('chart-data/', views.chart_data_view, name='chart_data_view'),
     path('historico/analise/', views.consultar_analise, name='consultar_analise'),
+
+    # --- FLUXO DE REDEFINIÇÃO DE SENHA ---
+    
+    # 1. Usuário insere o e-mail
+    path('password-reset/', 
+         auth_views.PasswordResetView.as_view(
+             template_name='core/password/password_reset_form.html',
+             email_template_name='core/password/password_reset_email.html',
+             subject_template_name='core/password/password_reset_subject.txt'
+         ),
+         name='password_reset'),
+
+    # 2. Aviso de "E-mail enviado"
+    path('password-reset/done/', 
+         auth_views.PasswordResetDoneView.as_view(
+             template_name='core/password/password_reset_done.html'
+         ),
+         name='password_reset_done'),
+
+    # 3. Link que o usuário clica no e-mail para digitar a nova senha
+    path('password-reset-confirm/<uidb64>/<token>/', 
+         auth_views.PasswordResetConfirmView.as_view(
+             template_name='core/password/password_reset_confirm.html'
+         ),
+         name='password_reset_confirm'),
+
+    # 4. Sucesso "Sua senha foi alterada"
+    path('password-reset-complete/', 
+         auth_views.PasswordResetCompleteView.as_view(
+             template_name='core/password/password_reset_complete.html'
+         ),
+         name='password_reset_complete'),
+
 ]

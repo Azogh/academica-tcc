@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Acadêmica{% endblock %}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+        }
+        h1 { font-size: 2em; margin-bottom: 20px; font-weight: 600; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; }
+        input {
+            width: 100%; padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px; color: #fff; box-sizing: border-box;
+        }
+        input:focus { background: rgba(255, 255, 255, 0.2); outline: none; border-color: #ffb703; }
+        button {
+            width: 100%; padding: 12px; background-color: #ffb703;
+            color: #2c3e50; border: none; border-radius: 8px;
+            font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.3s;
+        }
+        button:hover { background-color: #fb8500; transform: translateY(-2px); }
+        .links { margin-top: 20px; }
+        .links a { color: #ffb703; text-decoration: none; font-size: 0.9em; }
+        .links a:hover { color: #fb8500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

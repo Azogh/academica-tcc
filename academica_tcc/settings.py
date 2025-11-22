@@ -135,3 +135,8 @@ load_dotenv()
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Configuração de E-mail para Desenvolvimento (Imprime no Console)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Quando formos para produção (deploy), trocaremos isso por SMTP.
