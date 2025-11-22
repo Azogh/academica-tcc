@@ -136,6 +136,33 @@ class TurmaForm(forms.ModelForm):
         }
 
 class HorarioForm(forms.ModelForm):
+    # --- Campos Extras (Lógica de Interface) ---
+    CREDITOS_CHOICES = [
+        ('2', '2 Créditos (1 Encontro Semanal)'),
+        ('4', '4 Créditos (2 Encontros Semanais)'),
+    ]
+    
+    creditos = forms.ChoiceField(
+        choices=CREDITOS_CHOICES, 
+        widget=forms.RadioSelect, 
+        initial='2',
+        label="Carga Horária da Oferta"
+    )
+    
+    # Campos para o Segundo Horário (opcionais na validação padrão, obrigatórios se 4 créditos)
+    dia_semana_2 = forms.ChoiceField(
+        choices=Horario.DIA_CHOICES, 
+        required=False, 
+        label="Dia da Semana (2º Encontro)",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    periodo_2 = forms.ChoiceField(
+        choices=Horario.PERIODO_CHOICES, 
+        required=False, 
+        label="Período (2º Encontro)",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
     class Meta:
         model = Horario
         fields = ['turma', 'disciplina', 'dia_semana', 'periodo']
@@ -147,28 +174,41 @@ class HorarioForm(forms.ModelForm):
         }
 
     def clean(self):
-        """
-        Validação customizada para impedir choque de horários na mesma turma.
-        """
         cleaned_data = super().clean()
         turma = cleaned_data.get('turma')
-        dia_semana = cleaned_data.get('dia_semana')
-        periodo = cleaned_data.get('periodo')
+        creditos = cleaned_data.get('creditos')
         
-        # Se os campos básicos foram preenchidos, verifica conflito
-        if turma and dia_semana and periodo:
-            # Busca se já existe algum horário para essa turma, nesse dia e período
-            # O .exclude(pk=self.instance.pk) é importante para permitir a EDIÇÃO do próprio registro sem dar erro
-            conflito = Horario.objects.filter(
-                turma=turma, 
-                dia_semana=dia_semana, 
-                periodo=periodo
-            ).exclude(pk=self.instance.pk).first()
+        # --- Validação do Horário 1 (Padrão) ---
+        dia1 = cleaned_data.get('dia_semana')
+        per1 = cleaned_data.get('periodo')
+        
+        if turma and dia1 and per1:
+            # Verifica conflito no horário 1 (excluindo o próprio se for edição)
+            conflito1 = Horario.objects.filter(turma=turma, dia_semana=dia1, periodo=per1)
+            if self.instance.pk:
+                conflito1 = conflito1.exclude(pk=self.instance.pk)
+            
+            conflito1 = conflito1.first()
+            
+            if conflito1:
+                self.add_error('dia_semana', f"Conflito! A disciplina '{conflito1.disciplina}' já ocupa {dia1} {per1}.")
 
-            if conflito:
-                # Aqui Mensagem de erro
-                raise forms.ValidationError(
-                    f"Conflito de Horário! A disciplina '{conflito.disciplina.nome}' já está cadastrada para a turma {turma.nome} neste dia e período."
-                )
-        
+        # --- Validação do Horário 2 (Se for 4 créditos) ---
+        if creditos == '4':
+            dia2 = cleaned_data.get('dia_semana_2')
+            per2 = cleaned_data.get('periodo_2')
+
+            # 1. Verifica se preencheu
+            if not dia2 or not per2:
+                raise forms.ValidationError("Para 4 créditos, você DEVE informar o dia e período do 2º encontro.")
+            
+            # 2. Verifica se é igual ao primeiro (não faz sentido)
+            if dia1 == dia2 and per1 == per2:
+                raise forms.ValidationError("O 2º encontro não pode ser no mesmo horário do 1º.")
+
+            # 3. Verifica conflito no banco para o horário 2
+            conflito2 = Horario.objects.filter(turma=turma, dia_semana=dia2, periodo=per2).first()
+            if conflito2:
+                self.add_error('dia_semana_2', f"Conflito no 2º Horário! A disciplina '{conflito2.disciplina}' já ocupa {dia2} {per2}.")
+
         return cleaned_data

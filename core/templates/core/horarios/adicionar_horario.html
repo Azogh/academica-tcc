@@ -4,36 +4,145 @@
 {% block page_title %}Adicionar Novo Horário{% endblock %}
 
 {% block content %}
-    <form method="post">
-        {% csrf_token %}
+<style>
+    /* Estilo para os Radio Buttons ficarem lado a lado */
+    .radio-group {
+        display: flex;
+        gap: 20px;
+        margin-top: 5px;
+    }
+    .radio-group label {
+        background: rgba(255,255,255,0.1);
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.3s;
+    }
+    .radio-group input[type="radio"]:checked + label {
+        background-color: #ffb703; /* Amarelo */
+        color: #000;
+        font-weight: bold;
+    }
+    
+    /* Área do segundo horário (escondida por padrão) */
+    #extra-schedule {
+        display: none; /* Começa invisível */
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #ffb703;
+        margin-top: 15px;
+        animation: fadeIn 0.5s;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 
-        {% if form.non_field_errors %}
-            <div style="background-color: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; color: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-                {% for error in form.non_field_errors %}
-                    <i class="fas fa-exclamation-triangle" style="margin-right: 8px; color: #ffb703;"></i>
-                    <strong>{{ error }}</strong>
-                {% endfor %}
+<form method="post">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+        <div style="background-color: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; color: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            {% for error in form.non_field_errors %}
+                <p style="margin: 0;"><i class="fas fa-exclamation-triangle"></i> {{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="form-group">
+        <label>{{ form.turma.label }}</label>
+        {{ form.turma }}
+        {{ form.turma.errors }}
+    </div>
+    
+    <div class="form-group">
+        <label>{{ form.disciplina.label }}</label>
+        {{ form.disciplina }}
+        {{ form.disciplina.errors }}
+    </div>
+
+    <div class="form-group">
+        <label>Carga Horária da Oferta:</label>
+        <div class="radio-group">
+            {% for radio in form.creditos %}
+                <div class="radio-item">
+                    {{ radio.tag }}
+                    <label for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+
+    <h4 style="margin-bottom: 15px; color: #ffb703;">1º Encontro</h4>
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div class="form-group" style="flex: 1;">
+            <label>{{ form.dia_semana.label }}</label>
+            {{ form.dia_semana }}
+            <div style="color: #ffb703; font-size: 0.9em;">{{ form.dia_semana.errors }}</div>
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label>{{ form.periodo.label }}</label>
+            {{ form.periodo }}
+            <div style="color: #ffb703; font-size: 0.9em;">{{ form.periodo.errors }}</div>
+        </div>
+    </div>
+
+    <div id="extra-schedule">
+        <h4 style="margin-bottom: 15px; color: #ffb703;">2º Encontro (Obrigatório para 4 créditos)</h4>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1;">
+                <label>{{ form.dia_semana_2.label }}</label>
+                {{ form.dia_semana_2 }}
+                <div style="color: #ffb703; font-size: 0.9em;">{{ form.dia_semana_2.errors }}</div>
             </div>
-        {% endif %}
-
-        {% for field in form %}
-        <div class="form-group">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            
-            {% if field.errors %}
-                <ul style="list-style: none; padding: 0; margin-top: 5px; color: #ffb703; font-size: 0.9em;">
-                    {% for error in field.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
+            <div class="form-group" style="flex: 1;">
+                <label>{{ form.periodo_2.label }}</label>
+                {{ form.periodo_2 }}
+                <div style="color: #ffb703; font-size: 0.9em;">{{ form.periodo_2.errors }}</div>
+            </div>
         </div>
-        {% endfor %}
+    </div>
 
-        <div class="form-buttons">
-            <a href="{% url 'listar_horarios' %}" class="cancel-button">Cancelar</a>
-            <button type="submit" class="cta-button">Salvar</button>
-        </div>
-    </form>
+    <div class="form-buttons">
+        <a href="{% url 'listar_horarios' %}" class="cancel-button">Cancelar</a>
+        <button type="submit" class="cta-button">Salvar Oferta</button>
+    </div>
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pega os elementos
+        const radios = document.querySelectorAll('input[name="creditos"]');
+        const extraSection = document.getElementById('extra-schedule');
+        
+        function toggleExtra() {
+            // Verifica qual radio está marcado
+            let selectedValue = '2';
+            radios.forEach(r => {
+                if(r.checked) selectedValue = r.value;
+            });
+
+            // Mostra ou esconde
+            if (selectedValue === '4') {
+                extraSection.style.display = 'block';
+            } else {
+                extraSection.style.display = 'none';
+                // Limpa os campos se esconder (opcional, mas boa prática para UX)
+                // document.querySelector('select[name="dia_semana_2"]').value = ''; 
+            }
+        }
+
+        // Adiciona evento de clique
+        radios.forEach(r => r.addEventListener('change', toggleExtra));
+
+        // Roda ao iniciar (caso a página recarregue com erro e o valor 4 esteja marcado)
+        toggleExtra();
+    });
+</script>
 {% endblock %}
