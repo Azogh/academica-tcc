@@ -65,7 +65,7 @@
         <p><strong>Aluno:</strong> {{ analise.historico.aluno.nome }}</p>
         <p><strong>Análise Original:</strong> {{ analise.get_tipo_analise_display }}</p>
         <p style="color: #aaa; font-size: 0.9em;">
-            O sistema bloqueará automaticamente horários conflitantes.
+            O sistema bloqueará automaticamente horários conflitantes e selecionará disciplinas inteiras (4 créditos).
         </p>
     </div>
     
@@ -91,11 +91,15 @@
                                value="{{ horario.pk }}" 
                                class="big-checkbox schedule-checkbox"
                                {% if horario.marcado %}checked{% endif %}
+                               
                                /* DADOS PARA O JAVASCRIPT LER */
                                data-dia="{{ horario.dia_semana }}"
                                data-periodo="{{ horario.periodo }}"
                                data-row="row-{{ horario.pk }}"
                                data-disciplina="{{ horario.disciplina.nome }}"
+                               
+                               /* NOVO: Identificador único do par Turma+Disciplina */
+                               data-group="T{{ horario.turma.id }}-D{{ horario.disciplina.id }}"
                         >
                     </td>
                     <td>
@@ -132,18 +136,36 @@
     document.addEventListener('DOMContentLoaded', function() {
         const checkboxes = document.querySelectorAll('.schedule-checkbox');
 
+        // Função para sincronizar irmãos (mesma disciplina na mesma turma)
+        function syncSiblings(changedCheckbox) {
+            const groupId = changedCheckbox.dataset.group;
+            const isChecked = changedCheckbox.checked;
+
+            checkboxes.forEach(cb => {
+                // Se tem o mesmo grupo e não é o próprio checkbox clicado
+                if (cb !== changedCheckbox && cb.dataset.group === groupId) {
+                    cb.checked = isChecked;
+                    
+                    // Efeito visual simples
+                    const row = document.getElementById(cb.dataset.row);
+                    if(isChecked) {
+                        row.style.backgroundColor = "rgba(255, 193, 7, 0.1)";
+                        setTimeout(() => row.style.backgroundColor = "", 500);
+                    }
+                }
+            });
+        }
+
         function updateConflicts() {
-            // 1. Limpa todos os bloqueios visuais
+            // 1. Limpa todos os bloqueios visuais antes de recalcular
             document.querySelectorAll('.horario-row').forEach(row => {
                 row.classList.remove('row-disabled');
                 const msg = row.querySelector('.conflict-msg');
                 if(msg) msg.style.display = 'none';
             });
 
-            // 2. Mapeia o que está marcado atualmente
-            // Cria um conjunto de strings tipo "SEG|1-2"
+            // 2. Mapeia ONDE tem aula marcada (Assinatura: "DIA|PERIODO")
             const occupiedSlots = new Set();
-            
             checkboxes.forEach(cb => {
                 if (cb.checked) {
                     const signature = `${cb.dataset.dia}|${cb.dataset.periodo}`;
@@ -151,31 +173,63 @@
                 }
             });
 
-            // 3. Bloqueia os conflitantes
+            // 3. Identifica quais GRUPOS (Disciplinas inteiras) estão condenados
+            // Se uma perna da disciplina bate num horário ocupado, o corpo todo morre.
+            const blockedGroups = new Set();
+
             checkboxes.forEach(cb => {
-                if (!cb.checked) { // Só analisa quem NÃO está marcado
+                if (!cb.checked) { // Olha apenas para os não marcados
                     const signature = `${cb.dataset.dia}|${cb.dataset.periodo}`;
                     
-                    // Se esse horário já está no set de ocupados, desabilita!
+                    // Se este horário específico está ocupado por outra matéria...
                     if (occupiedSlots.has(signature)) {
+                        // ...e esta linha faz parte de um grupo (4 créditos)...
+                        if (cb.dataset.group) {
+                            // ...adiciona o ID do grupo na lista negra.
+                            blockedGroups.add(cb.dataset.group);
+                        }
+                    }
+                }
+            });
+
+            // 4. Aplica o bloqueio visual (na linha específica E nos irmãos do grupo condenado)
+            checkboxes.forEach(cb => {
+                if (!cb.checked) {
+                    const signature = `${cb.dataset.dia}|${cb.dataset.periodo}`;
+                    const myGroup = cb.dataset.group;
+                    
+                    // Bloqueia SE:
+                    // A) O horário exato está ocupado  OU
+                    // B) O grupo dessa disciplina está na lista negra
+                    if (occupiedSlots.has(signature) || blockedGroups.has(myGroup)) {
+                        
                         const row = document.getElementById(cb.dataset.row);
                         row.classList.add('row-disabled');
+                        
                         const msg = row.querySelector('.conflict-msg');
                         if(msg) {
                             msg.style.display = 'inline';
-                            msg.innerHTML = `<i class="fas fa-ban"></i> Conflito (${cb.dataset.dia} ${cb.dataset.periodo})`;
+                            // Mensagem personalizada dependendo do motivo
+                            if (occupiedSlots.has(signature)) {
+                                msg.innerHTML = `<i class="fas fa-ban"></i> Conflito Direto`;
+                            } else {
+                                msg.innerHTML = `<i class="fas fa-link"></i> Parte do grupo conflita`;
+                            }
                         }
                     }
                 }
             });
         }
 
-        // Adiciona evento de click em todos
+        // Adiciona eventos
         checkboxes.forEach(cb => {
-            cb.addEventListener('change', updateConflicts);
+            cb.addEventListener('change', function() {
+                syncSiblings(this); 
+                updateConflicts();
+            });
         });
 
-        // Roda uma vez ao carregar a página para bloquear o que já veio marcado
+        // Roda uma vez ao iniciar para aplicar bloqueios iniciais
         updateConflicts();
     });
 </script>

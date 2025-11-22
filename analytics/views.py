@@ -44,17 +44,51 @@ def serializar_matriz(curso_nome):
     except Exception:
         return "[]"
 
-def serializar_horarios():
-    horarios = Horario.objects.select_related('disciplina').all()
-    return json.dumps([
-        {
-            "id": h.pk,
-            "sigla_disciplina": h.disciplina.sigla,
-            "dia_semana": h.dia_semana,
-            "periodo": h.periodo
-        }
-        for h in horarios
-    ])
+def serializar_horarios(dias_excluidos_lista=None):
+    """
+    Retorna os horários disponíveis, mas com uma regra de ouro:
+    Se uma disciplina de 4 créditos tem aulas em dias diferentes,
+    e UM desses dias está excluído, a disciplina INTEIRA é removida.
+    """
+    if dias_excluidos_lista is None:
+        dias_excluidos_lista = []
+        
+    # Busca todos os horários
+    horarios = Horario.objects.select_related('disciplina', 'turma').all()
+    
+    # 1. Agrupa por (Turma, Disciplina) para identificar os "pacotes"
+    # Chave: (turma_id, disciplina_id) -> Valor: Lista de objetos Horario
+    grupos_disciplinas = {}
+    for h in horarios:
+        chave = (h.turma.id, h.disciplina.id)
+        if chave not in grupos_disciplinas:
+            grupos_disciplinas[chave] = []
+        grupos_disciplinas[chave].append(h)
+    
+    horarios_validos = []
+    
+    # 2. Valida cada grupo
+    for chave, lista_horarios in grupos_disciplinas.items():
+        # Verifica se ALGUM horário desse grupo cai num dia excluído
+        grupo_condenado = False
+        for h in lista_horarios:
+            if h.dia_semana in dias_excluidos_lista:
+                grupo_condenado = True
+                break
+        
+        # Se o grupo não foi condenado, adiciona TODOS os horários dele na lista final
+        if not grupo_condenado:
+            for h in lista_horarios:
+                horarios_validos.append({
+                    "id": h.pk,
+                    "sigla_disciplina": h.disciplina.sigla,
+                    "dia_semana": h.dia_semana,
+                    "periodo": h.periodo,
+                    # Passamos o ID do grupo para a IA saber que devem ir juntos (opcional, mas ajuda)
+                    "grupo_id": f"T{h.turma.id}_D{h.disciplina.id}" 
+                })
+
+    return json.dumps(horarios_validos)
 
 # -------------------------------------------------------------------
 # VIEWS
@@ -90,7 +124,7 @@ def analisar_historico(request, historico_pk):
                 curso_aluno = historico.curso
                 
             matriz_json = serializar_matriz(curso_aluno)
-            horarios_json = serializar_horarios()
+            horarios_json = serializar_horarios(dias_excluidos_lista)
 
             lista_ids_horarios = gemini_analytics.gerar_analise_grade(
                 historico_json,
