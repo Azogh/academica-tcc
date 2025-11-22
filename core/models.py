@@ -130,7 +130,7 @@ class Disciplinas(models.Model):
         verbose_name_plural = "Disciplinas"
 
     def __str__(self):
-        return self.nome
+        return f"{self.codigo} - {self.nome}"
     
 # ====================================================================
 # Modelos de Oferta e Horários (Domínio: Turmas e Grade)

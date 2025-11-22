@@ -1,21 +1,127 @@
 {% extends 'core/base.html' %}
 
 {% block title %}Cadastrar Disciplina{% endblock %}
-{% block page_title %}Cadastrar Disciplina{% endblock %}
+{% block page_title %}Gerenciar Disciplinas{% endblock %}
+
+{% block extra_head %}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        /* Ajuste visual para o Select2 combinar com seu tema Glass/Dark */
+        .select2-container--default .select2-selection--multiple {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            min-height: 45px;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #ffb703; /* Cor amarela do seu tema */
+            color: #2c3e50;
+            border: none;
+            font-weight: 600;
+        }
+        .select2-dropdown {
+            background-color: #2c3e50;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: #ffb703;
+            color: #2c3e50;
+        }
+        
+        /* Checkbox customizado */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+        .checkbox-wrapper input {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+    </style>
+{% endblock %}
 
 {% block content %}
+    <h2 style="margin-bottom: 20px;">Cadastrar Disciplina</h2>
+
     <form method="post">
         {% csrf_token %}
+        
         {% for field in form %}
-        <div class="form-group">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-        </div>
+            {% if field.name != 'pre_requisitos' %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <ul class="errorlist" style="color: #ffb703;">
+                            {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            {% endif %}
         {% endfor %}
+
+        <div style="margin-top: 30px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+            
+            <label class="checkbox-wrapper">
+                <input type="checkbox" id="toggle-prereq">
+                <span>Esta disciplina possui pré-requisitos?</span>
+            </label>
+
+            <div id="prereq-container" style="display: none;">
+                <label for="{{ form.pre_requisitos.id_for_label }}">Selecione os Pré-requisitos:</label>
+                {{ form.pre_requisitos }}
+                <small style="color: #ddd; display: block; margin-top: 5px;">
+                    Digite o nome da disciplina para buscar. Você pode selecionar várias.
+                </small>
+            </div>
+        </div>
+
         <div class="form-buttons">
             <a href="{% url 'listar_disciplinas' %}" class="cancel-button">Cancelar</a>
             <button type="submit" class="cta-button">Salvar</button>
-
         </div>
     </form>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // 1. Inicializa o Select2 no campo de pré-requisitos
+            $('#id_pre_requisitos').select2({
+                placeholder: "Digite para buscar disciplinas...",
+                allowClear: true,
+                width: '100%' // Garante que ocupe a largura toda
+            });
+
+            // 2. Lógica do Checkbox (Mostrar/Esconder)
+            const toggleCheckbox = document.getElementById('toggle-prereq');
+            const container = document.getElementById('prereq-container');
+            const selectField = $('#id_pre_requisitos'); // Usando jQuery para controlar o select2
+
+            // Função para verificar estado
+            function checkState() {
+                if (toggleCheckbox.checked) {
+                    $(container).slideDown(); // Animação suave
+                } else {
+                    $(container).slideUp();
+                    selectField.val(null).trigger('change'); // Limpa a seleção se desmarcar!
+                }
+            }
+
+            // Escuta o clique no checkbox
+            toggleCheckbox.addEventListener('change', checkState);
+
+            // Verifica se já deve começar aberto (caso de edição ou erro de validação)
+            if (selectField.val() && selectField.val().length > 0) {
+                toggleCheckbox.checked = true;
+                $(container).show();
+            }
+        });
+    </script>
 {% endblock %}
