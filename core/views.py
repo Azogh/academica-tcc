@@ -330,25 +330,63 @@ def consultar_horarios(request):
         'cursos': cursos,
         'anos': anos_turma
     })
-
 @login_required
 def chart_data_view(request):
+    """
+    Retorna dados REAIS do banco de dados para os gráficos.
+    """
+    
+    # ---------------------------------------------------------
+    # 1. GRÁFICO DE DISCIPLINAS (Real)
+    # Busca todas as matrizes e conta quantas disciplinas cada uma tem
+    # ---------------------------------------------------------
+    matrizes_data = MatrizCurricular.objects.annotate(total_disciplinas=Count('disciplinas')).order_by('curso')
+    
+    # Cria as listas para o Chart.js
+    disc_labels = [m.curso for m in matrizes_data] # Ex: ['Sistemas de Informação', 'Direito']
+    disc_values = [m.total_disciplinas for m in matrizes_data] # Ex: [45, 50]
+
+    # Tratamento caso não tenha nada cadastrado ainda
+    if not disc_labels:
+        disc_labels = ['Sem Matrizes']
+        disc_values = [0]
+
     disciplinas_data = {
-        'labels': ['Matemática', 'Física', 'Sistemas da Informação', 'Gastronomia'],
-        'datasets': [{'label': 'Disciplinas por Matriz', 'data': [15, 12, 20, 18]}]
+        'labels': disc_labels,
+        'datasets': [{'label': 'Qtd. Disciplinas', 'data': disc_values}]
     }
-    historicos_data = {
-        'labels': ['Alunos com Histórico', 'Alunos sem Histórico'],
-        'datasets': [{'label': 'Históricos no Sistema', 'data': [50, 10]}]
-    }
-    reprovacao_data = {
-        'labels': ['Lab. BD', 'Estrutura de Dados', 'Redes de Comp.'],
-        'datasets': [{'label': 'Reprovação (%)', 'data': [25, 45, 15]}]
-    }
+
+    # ---------------------------------------------------------
+    # 2. GRÁFICO DE TURMAS (Real - Substituindo "Rematrículas" por enquanto)
+    # Mostra quantas turmas foram abertas por ano
+    # ---------------------------------------------------------
+    turmas_data = Turma.objects.values('ano_ingresso').annotate(total=Count('id')).order_by('ano_ingresso')
+    
+    turma_labels = [str(t['ano_ingresso']) for t in turmas_data]
+    turma_values = [t['total'] for t in turmas_data]
+
     rematriculas_data = {
-        'labels': ['Aprovadas', 'Pendentes', 'Canceladas'],
-        'datasets': [{'label': 'Status de Rematrículas', 'data': [35, 15, 5]}]
+        'labels': turma_labels if turma_labels else ['Sem Turmas'],
+        'datasets': [{'label': 'Turmas por Ano', 'data': turma_values if turma_values else [0]}]
     }
+
+    # ---------------------------------------------------------
+    # 3. OUTROS GRÁFICOS (Placeholders Limpos)
+    # Como os modelos de Histórico e Análise estão em outros apps (upload/analytics),
+    # vamos deixá-los zerados para não mentir para o usuário.
+    # Futuramente, você importará: from upload.models import Historico
+    # ---------------------------------------------------------
+    
+    historicos_data = {
+        'labels': ['Com Histórico', 'Sem Histórico'],
+        'datasets': [{'label': 'Total', 'data': [0, 0]}] # Zerado por enquanto
+    }
+
+    reprovacao_data = {
+        'labels': ['Aguardando Dados'],
+        'datasets': [{'label': 'Índice (%)', 'data': [0]}] # Zerado por enquanto
+    }
+    
     return JsonResponse({
         'disciplinas': disciplinas_data,
         'historicos': historicos_data,

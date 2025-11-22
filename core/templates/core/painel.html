@@ -1,76 +1,174 @@
 {% extends 'core/base.html' %}
 
 {% block title %}Painel de Controle{% endblock %}
-{% block page_title %}Painel de Controle{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
-        <div class="content-card">
+<style>
+    /* Grid de 2 colunas */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .chart-card {
+        background-color: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chart-card h3 {
+        font-size: 1.1em;
+        margin-bottom: 15px;
+        color: #fff;
+        font-weight: 500;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 10px;
+    }
+
+    /* CORREÇÃO DO TAMANHO: Altura fixa para o gráfico não estourar */
+    .chart-container {
+        position: relative;
+        height: 250px; 
+        width: 100%;
+    }
+</style>
+
+<div class="dashboard-grid">
+    
+    <div class="chart-card">
+        <h3>Disciplinas por Curso</h3>
+        <div class="chart-container">
             <canvas id="disciplinasChart"></canvas>
-            <h3 style="text-align: center; margin-top: 15px;">Disciplinas por Matriz Curricular</h3>
-        </div>
-        <div class="content-card">
-            <canvas id="historicosChart"></canvas>
-            <h3 style="text-align: center; margin-top: 15px;">Históricos no Sistema</h3>
-        </div>
-        <div class="content-card">
-            <canvas id="reprovacaoChart"></canvas>
-            <h3 style="text-align: center; margin-top: 15px;">Índice de Reprovação</h3>
-        </div>
-        <div class="content-card">
-            <canvas id="rematriculasChart"></canvas>
-            <h3 style="text-align: center; margin-top: 15px;">Status de Rematrículas</h3>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Requisição para buscar os dados dos gráficos
-            fetch('/chart-data/')
-                .then(response => response.json())
-                .then(data => {
-                    const chartOptions = {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { color: 'rgba(255, 255, 255, 0.8)' }
-                            },
-                            x: {
-                                ticks: { color: 'rgba(255, 255, 255, 0.8)' }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                labels: { color: 'rgba(255, 255, 255, 0.8)' }
-                            }
-                        }
-                    };
 
-                    new Chart(document.getElementById('disciplinasChart'), {
-                        type: 'bar',
-                        data: data.disciplinas,
-                        options: chartOptions
-                    });
-                    new Chart(document.getElementById('historicosChart'), {
-                        type: 'bar',
-                        data: data.historicos,
-                        options: chartOptions
-                    });
-                    new Chart(document.getElementById('reprovacaoChart'), {
-                        type: 'bar',
-                        data: data.reprovacao,
-                        options: chartOptions
-                    });
-                    new Chart(document.getElementById('rematriculasChart'), {
-                        type: 'bar',
-                        data: data.rematriculas,
-                        options: chartOptions
-                    });
-                })
-                .catch(error => console.error('Erro ao buscar dados dos gráficos:', error));
-        });
-    </script>
+    <div class="chart-card">
+        <h3>Históricos Importados</h3>
+        <div class="chart-container">
+            <canvas id="historicosChart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h3>Índice de Reprovação (%)</h3>
+        <div class="chart-container">
+            <canvas id="reprovacaoChart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h3>Turmas por Ano</h3>
+        <div class="chart-container">
+            <canvas id="rematriculasChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuração Global (Texto Branco)
+        Chart.defaults.color = '#fff'; 
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+        
+        function createGradient(ctx, colorStart, colorEnd) {
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, colorStart);
+            gradient.addColorStop(1, colorEnd);
+            return gradient;
+        }
+
+        fetch('/chart-data/')
+            .then(response => response.json())
+            .then(data => {
+                
+                const commonOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false, // Funciona graças ao .chart-container com height fixa
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' } },
+                        x: { grid: { display: false } }
+                    }
+                };
+
+                // 1. Disciplinas
+                const ctx1 = document.getElementById('disciplinasChart').getContext('2d');
+                new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: data.disciplinas.labels,
+                        datasets: [{
+                            label: 'Qtd',
+                            data: data.disciplinas.datasets[0].data,
+                            backgroundColor: createGradient(ctx1, '#ffb703', '#fb8500'),
+                            borderRadius: 5
+                        }]
+                    },
+                    options: commonOptions
+                });
+
+                // 2. Históricos (Rosquinha)
+                const ctx2 = document.getElementById('historicosChart').getContext('2d');
+                new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.historicos.labels,
+                        datasets: [{
+                            data: data.historicos.datasets[0].data,
+                            backgroundColor: ['#2ecc71', '#e74c3c'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        plugins: { legend: { position: 'right' } }
+                    }
+                });
+
+                // 3. Reprovação (Linha)
+                const ctx3 = document.getElementById('reprovacaoChart').getContext('2d');
+                new Chart(ctx3, {
+                    type: 'line',
+                    data: {
+                        labels: data.reprovacao.labels,
+                        datasets: [{
+                            label: '% Reprovação',
+                            data: data.reprovacao.datasets[0].data,
+                            borderColor: '#ff9f43',
+                            backgroundColor: 'rgba(255, 159, 67, 0.2)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: commonOptions
+                });
+
+                // 4. Turmas
+                const ctx4 = document.getElementById('rematriculasChart').getContext('2d');
+                new Chart(ctx4, {
+                    type: 'bar',
+                    data: {
+                        labels: data.rematriculas.labels,
+                        datasets: [{
+                            label: 'Turmas',
+                            data: data.rematriculas.datasets[0].data,
+                            backgroundColor: '#2ecc71',
+                            borderRadius: 5
+                        }]
+                    },
+                    options: commonOptions
+                });
+            })
+            .catch(error => console.error('Erro ao buscar dados:', error));
+    });
+</script>
 {% endblock %}
