@@ -58,10 +58,12 @@
             color: #fff;
         }
 
+        /* Estiliza todos os inputs textuais e de data */
         input[type="text"],
         input[type="email"],
         input[type="password"],
-        input[type="date"] {
+        input[type="date"],
+        input[type="number"] {
             width: 100%;
             padding: 10px;
             background: rgba(255, 255, 255, 0.1);
@@ -73,13 +75,21 @@
             transition: all 0.3s ease;
         }
         
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        input[type="password"]:focus,
-        input[type="date"]:focus {
+        /* Estiliza o ícone do calendário para ser branco (funciona no Chrome/Edge) */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+        
+        input:focus {
             background: rgba(255, 255, 255, 0.2);
             border-color: #ffb703;
             outline: none;
+        }
+
+        input::placeholder {
+            color: #e0e0e0; /* Levemente mais cinza para diferenciar do texto digitado */
+            opacity: 1;
         }
 
         button {
@@ -123,37 +133,108 @@
         }
 
         .errorlist {
-            color: #ffb703;
+            color: #ffeb3b; /* Amarelo mais claro para ler melhor no fundo azul */
             list-style-type: none;
             padding: 0;
-            font-size: 0.9em;
+            font-size: 0.85em;
             text-align: left;
             margin-top: 5px;
+            background: rgba(0,0,0,0.2); /* Fundo escuro suave atrás do erro */
+            padding: 5px;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <a href="{% url 'login' %}">
+        <a href="{% url 'login' %}" style="text-decoration: none;">
             <button type="button" class="btn-back">← Voltar para o login</button>
         </a>
 
         <h1>Cadastro de Coordenador</h1>
+        
         <form method="post">
             {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.username.errors %} <li>{{ error }}</li> {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.first_name.errors %} <li>{{ error }}</li> {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.last_name.errors %} <li>{{ error }}</li> {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.email.errors %} <li>{{ error }}</li> {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.gestao_inicio.id_for_label }}">{{ form.gestao_inicio.label }}</label>
+                {{ form.gestao_inicio }}
+                {% if form.gestao_inicio.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.gestao_inicio.errors %} <li>{{ error }}</li> {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.portaria.id_for_label }}">{{ form.portaria.label }}</label>
+                {{ form.portaria }}
+                {% if form.portaria.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.portaria.errors %} <li>{{ error }}</li> {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
             {% for field in form %}
-                <div class="form-group">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}
-                        <ul class="errorlist">
-                            {% for error in field.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
+                {% if field.name not in "username first_name last_name email gestao_inicio portaria" %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <ul class="errorlist">
+                                {% for error in field.errors %} <li>{{ error }}</li> {% endfor %}
+                            </ul>
+                        {% endif %}
+                        {% if field.help_text %}
+                            <small style="color: #ddd; font-size: 0.8em; display: block; margin-top: 5px;">
+                                {{ field.help_text|safe }}
+                            </small>
+                        {% endif %}
+                    </div>
+                {% endif %}
             {% endfor %}
+
             <button type="submit">Cadastrar</button>
         </form>
     </div>
