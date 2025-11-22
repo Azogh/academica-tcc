@@ -274,15 +274,36 @@ def listar_horarios(request):
 
 @login_required
 def adicionar_horario(request):
+    """Permite adicionar um novo Horário (com suporte a 4 créditos)."""
     if request.method == 'POST':
         form = HorarioForm(request.POST)
+        
         if form.is_valid():
-            horario = form.save(commit=False)
-            horario.usuario = request.user
-            horario.save()
+            # 1. Salva o Primeiro Horário (Padrão do ModelForm)
+            horario1 = form.save(commit=False)
+            horario1.usuario = request.user
+            horario1.save()
+            
+            # 2. LÓGICA MANUAL: Verifica se era 4 créditos para salvar o segundo
+            # É aqui que o sistema estava "esquecendo" de salvar a quarta-feira
+            if form.cleaned_data.get('creditos') == '4':
+                
+                # Cria um NOVO registro no banco para o segundo encontro
+                Horario.objects.create(
+                    turma=horario1.turma,                   # Mesma turma
+                    disciplina=horario1.disciplina,         # Mesma disciplina
+                    dia_semana=form.cleaned_data['dia_semana_2'], # Pega do campo extra do form
+                    periodo=form.cleaned_data['periodo_2'],       # Pega do campo extra do form
+                    usuario=request.user
+                )
+                messages.success(request, "Disciplina de 4 créditos salva (2 horários criados)!")
+            else:
+                messages.success(request, "Horário cadastrado com sucesso!")
+
             return redirect('listar_horarios')
     else:
         form = HorarioForm()
+        
     return render(request, 'core/horarios/adicionar_horario.html', {'form': form})
 
 @login_required
