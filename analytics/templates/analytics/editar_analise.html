@@ -23,11 +23,13 @@
         color: var(--accent-color);
         font-weight: 600;
     }
-    .table-edit tr:hover {
-        background-color: rgba(255, 255, 255, 0.02);
+    /* Linha desabilitada (conflito) */
+    .row-disabled {
+        opacity: 0.3;
+        background-color: rgba(0,0,0,0.2);
+        pointer-events: none; /* Impede clique */
     }
     
-    /* Checkbox customizado maior */
     .big-checkbox {
         width: 20px;
         height: 20px;
@@ -43,6 +45,13 @@
         background-color: var(--input-bg-color);
         border: 1px solid var(--border-color);
     }
+    
+    .conflict-msg {
+        color: #ff6b6b;
+        font-size: 0.8em;
+        display: none;
+        margin-left: 10px;
+    }
 </style>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -55,7 +64,9 @@
     <div class="aluno-info" style="margin-bottom: 20px;">
         <p><strong>Aluno:</strong> {{ analise.historico.aluno.nome }}</p>
         <p><strong>Análise Original:</strong> {{ analise.get_tipo_analise_display }}</p>
-        <p style="color: #aaa; font-size: 0.9em;">Marque ou desmarque as caixas para montar a grade final.</p>
+        <p style="color: #aaa; font-size: 0.9em;">
+            O sistema bloqueará automaticamente horários conflitantes.
+        </p>
     </div>
     
     <form method="POST">
@@ -68,28 +79,36 @@
                     <th>Disciplina</th>
                     <th>Dia da Semana</th>
                     <th>Período</th>
-                    <th>Semestre Ideal</th>
+                    <th>Turma (Ano)</th>
                 </tr>
             </thead>
             <tbody>
                 {% for horario in todos_horarios %}
-                <tr {% if horario.marcado %}style="background-color: rgba(40, 167, 69, 0.15);"{% endif %}>
+                <tr id="row-{{ horario.pk }}" class="horario-row">
                     <td style="text-align: center;">
                         <input type="checkbox" 
                                name="horarios_selecionados" 
                                value="{{ horario.pk }}" 
-                               class="big-checkbox"
-                               {% if horario.marcado %}checked{% endif %}>
+                               class="big-checkbox schedule-checkbox"
+                               {% if horario.marcado %}checked{% endif %}
+                               /* DADOS PARA O JAVASCRIPT LER */
+                               data-dia="{{ horario.dia_semana }}"
+                               data-periodo="{{ horario.periodo }}"
+                               data-row="row-{{ horario.pk }}"
+                               data-disciplina="{{ horario.disciplina.nome }}"
+                        >
                     </td>
                     <td>
-                        <strong>{{ horario.disciplina.nome }}</strong><br>
+                        <strong>{{ horario.disciplina.nome }}</strong>
+                        <span class="conflict-msg"><i class="fas fa-ban"></i> Conflito</span>
+                        <br>
                         <small style="color: #888;">{{ horario.disciplina.sigla }}</small>
                     </td>
                     <td>
                         <span class="badge-dia">{{ horario.dia_semana }}</span>
                     </td>
                     <td>{{ horario.periodo }}</td>
-                    <td>{{ horario.disciplina.semestre }}º Semestre</td>
+                    <td>{{ horario.turma.nome }} ({{ horario.turma.ano_ingresso }})</td>
                 </tr>
                 {% empty %}
                 <tr>
@@ -103,9 +122,61 @@
 
         <div class="button-group" style="margin-top: 30px;">
             <button type="submit" class="cta-button">
-                <i class="fas fa-save"></i> Salvar Grade
+                <i class="fas fa-save"></i> Salvar Grade Final
             </button>
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.schedule-checkbox');
+
+        function updateConflicts() {
+            // 1. Limpa todos os bloqueios visuais
+            document.querySelectorAll('.horario-row').forEach(row => {
+                row.classList.remove('row-disabled');
+                const msg = row.querySelector('.conflict-msg');
+                if(msg) msg.style.display = 'none';
+            });
+
+            // 2. Mapeia o que está marcado atualmente
+            // Cria um conjunto de strings tipo "SEG|1-2"
+            const occupiedSlots = new Set();
+            
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    const signature = `${cb.dataset.dia}|${cb.dataset.periodo}`;
+                    occupiedSlots.add(signature);
+                }
+            });
+
+            // 3. Bloqueia os conflitantes
+            checkboxes.forEach(cb => {
+                if (!cb.checked) { // Só analisa quem NÃO está marcado
+                    const signature = `${cb.dataset.dia}|${cb.dataset.periodo}`;
+                    
+                    // Se esse horário já está no set de ocupados, desabilita!
+                    if (occupiedSlots.has(signature)) {
+                        const row = document.getElementById(cb.dataset.row);
+                        row.classList.add('row-disabled');
+                        const msg = row.querySelector('.conflict-msg');
+                        if(msg) {
+                            msg.style.display = 'inline';
+                            msg.innerHTML = `<i class="fas fa-ban"></i> Conflito (${cb.dataset.dia} ${cb.dataset.periodo})`;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Adiciona evento de click em todos
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateConflicts);
+        });
+
+        // Roda uma vez ao carregar a página para bloquear o que já veio marcado
+        updateConflicts();
+    });
+</script>
 {% endblock %}
