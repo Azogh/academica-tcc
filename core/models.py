@@ -7,9 +7,7 @@ from django.contrib.auth.models import AbstractUser
 
 class Usuario(AbstractUser):
     """
-    Modelo customizado que estende o AbstractUser do Django para 
-    adicionar campos específicos do coordenador, como início de gestão e portaria.
-    Este modelo é central para a autenticação no sistema.
+    Modelo customizado que estende o AbstractUser do Django.
     """
     gestao_inicio = models.DateField(
         null=True, 
@@ -23,12 +21,11 @@ class Usuario(AbstractUser):
         verbose_name="Número da Portaria"
     )
 
-    # Sobrescrita para evitar conflitos de nomeação em projetos maiores
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='core_usuarios', 
         blank=True,
-        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        help_text='The groups this user belongs to.',
         related_query_name='core_usuario',
         verbose_name="Grupos de Usuário"
     )
@@ -42,18 +39,12 @@ class Usuario(AbstractUser):
     )
     
     class Meta:
-        # Define o nome da tabela no banco de dados
         db_table = 'USUARIO'
         verbose_name = "Usuário"
         verbose_name_plural = "Usuários"
     
     def __str__(self):
-        """Retorna o nome de usuário (username) como representação do objeto."""
         return self.username
-
-# ATENÇÃO: Os modelos Aluno, Historico, Ajuste e AjusteItens foram removidos
-# desta aplicação e movidos para 'upload/models.py' para resolver o conflito
-# de db_table e modularizar o projeto.
 
 # ====================================================================
 # Modelos de Estrutura Curricular (Domínio: Matrizes e Disciplinas)
@@ -63,8 +54,26 @@ class MatrizCurricular(models.Model):
     """
     Define a estrutura curricular de um curso específico.
     """
+    # --- LISTA DE OPÇÕES PARA O DROPDOWN ---
+    CURSOS_CHOICES = [
+        ('Sistemas de Informação', 'Bacharelado em Sistemas de Informação'),
+        ('Ciência da Computação', 'Ciência da Computação'),
+        ('Engenharia de Software', 'Engenharia de Software'),
+        ('Análise e Desenv. de Sistemas', 'Análise e Desenv. de Sistemas'),
+        ('Licenciatura em Matemática', 'Licenciatura em Matemática'),
+        # Adicione outros cursos da sua instituição aqui...
+    ]
+    # ---------------------------------------
+
     nome = models.CharField(max_length=45, verbose_name="Nome da Matriz")
-    curso = models.CharField(max_length=100, verbose_name="Curso")
+    
+    # Campo alterado para usar choices
+    curso = models.CharField(
+        max_length=100, 
+        choices=CURSOS_CHOICES, 
+        verbose_name="Curso"
+    )
+    
     ch_total = models.IntegerField(verbose_name="Carga Horária Total")
     estagio = models.IntegerField(
         null=True, 
@@ -85,10 +94,8 @@ class MatrizCurricular(models.Model):
         verbose_name_plural = "Matrizes Curriculares"
 
     def __str__(self):
-        """Retorna o nome da matriz e o ano de referência."""
         return f"{self.nome} ({self.ano_referencia})"
 
-# Em: academica-tcc/core/models.py
 
 class Disciplinas(models.Model):
     """
@@ -110,7 +117,6 @@ class Disciplinas(models.Model):
         verbose_name="Criado por"
     )
     
-    # Campo de auto-relacionamento para pré-requisitos
     pre_requisitos = models.ManyToManyField(
         'self', 
         symmetrical=False, 
@@ -124,7 +130,6 @@ class Disciplinas(models.Model):
         verbose_name_plural = "Disciplinas"
 
     def __str__(self):
-        """Retorna o nome da disciplina."""
         return self.nome
     
 # ====================================================================
@@ -149,14 +154,12 @@ class Turma(models.Model):
         verbose_name_plural = "Turmas"
 
     def __str__(self):
-        """Retorna o nome da turma."""
         return self.nome
 
 class Horario(models.Model):
     """
-    Define o horário e o dia em que uma Disciplina será ofertada por uma Turma.
+    Define o horário e o dia em que uma Disciplina será ofertada.
     """
-    # Definição de Escolhas
     DIA_CHOICES = [
         ('SEG', 'Segunda-feira'),
         ('TER', 'Terça-feira'),
@@ -181,11 +184,9 @@ class Horario(models.Model):
     
     class Meta:
         db_table = 'HORARIO'
-        # Adiciona restrições de unicidade para evitar sobreposição (boa prática)
         unique_together = ('turma', 'dia_semana', 'periodo', 'disciplina') 
         verbose_name = "Horário"
         verbose_name_plural = "Horários"
     
     def __str__(self):
-        """Retorna a descrição completa do horário."""
         return f"Turma: {self.turma.nome} | Disciplina: {self.disciplina.sigla} | Dia: {self.dia_semana}"

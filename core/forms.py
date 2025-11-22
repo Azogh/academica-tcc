@@ -14,7 +14,6 @@ class CoordenadorCadastroForm(UserCreationForm):
         model = Usuario
         fields = UserCreationForm.Meta.fields + ('first_name', 'last_name', 'email', 'gestao_inicio', 'portaria')
         
-        # 1. Alterando os Labels para Nome e Sobrenome
         labels = {
             'first_name': 'Nome',
             'last_name': 'Sobrenome',
@@ -24,13 +23,10 @@ class CoordenadorCadastroForm(UserCreationForm):
         }
 
         widgets = {
-            # 2. Calendário: type='date' faz aparecer o seletor de data do navegador
             'gestao_inicio': forms.DateInput(attrs={
                 'class': 'form-control', 
                 'type': 'date'  
             }),
-            
-            # 3. Limite de caracteres na Portaria e Placeholders
             'portaria': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Ex: 12345/2023',
@@ -52,16 +48,11 @@ class CoordenadorCadastroForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Torna campos obrigatórios
         self.fields['first_name'].required = True
         self.fields['last_name'].required = True
         self.fields['email'].required = True
-        
-        # Placeholder para o campo de usuário (que vem do UserCreationForm padrão)
         self.fields['username'].widget.attrs['placeholder'] = 'Digite o usuário para login'
         
-        # Garante que todos os campos tenham a classe bootstrap, inclusive senha
         for field_name, field in self.fields.items():
             if 'class' not in field.widget.attrs:
                 field.widget.attrs['class'] = 'form-control'
@@ -82,12 +73,33 @@ class MatrizCurricularForm(forms.ModelForm):
         }
         
         widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Bacharelado em Sistemas de Informação - 2023'}),
-            'curso': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Engenharia de Software'}),
-            'ch_total': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 3200'}),
-            'estagio': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 300'}),
-            'acc': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 100'}),
-            'ano_referencia': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 2023'}),
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ex: Bacharelado em Sistemas de Informação - 2023'
+            }),
+            
+            # --- CORREÇÃO APLICADA AQUI: Select em vez de TextInput ---
+            'curso': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            # ----------------------------------------------------------
+            
+            'ch_total': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ex: 3200'
+            }),
+            'estagio': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ex: 300'
+            }),
+            'acc': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ex: 100'
+            }),
+            'ano_referencia': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ex: 2023'
+            }),
         }
 
 class DisciplinaForm(forms.ModelForm):
