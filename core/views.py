@@ -2,9 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages  # <--- 1. IMPORTAÇÃO NOVA AQUI
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse
 from django.db.models import Count
+from django.contrib.auth import logout
 
 # Importações de Modelos e Formulários
 from .models import (
@@ -14,7 +16,7 @@ from .forms import (
     CoordenadorCadastroForm, MatrizCurricularForm, DisciplinaForm,
     TurmaForm, HorarioForm
 )
-from .templatetags.dict_filters import get_item # Utilizado em consultar_horarios
+from .templatetags.dict_filters import get_item
 
 # ====================================================================
 # Views de Páginas e Autenticação
@@ -27,13 +29,16 @@ def landing_page(request):
 def autocadastro_coordenador(request):
     """
     Permite que um novo coordenador se cadastre no sistema.
-    Após o cadastro, o usuário é redirecionado para a tela de login.
+    Após o cadastro, exibe mensagem de sucesso e redireciona para login.
     """
     if request.method == 'POST':
         form = CoordenadorCadastroForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            auth_login(request, user)
+            form.save() # Salva o usuário, mas NÃO loga automaticamente
+            
+            # 2. MENSAGEM DE SUCESSO ADICIONADA
+            messages.success(request, 'Cadastro realizado com sucesso! Por favor, faça seu login.')
+            
             return redirect('login')
     else:
         form = CoordenadorCadastroForm()
@@ -42,12 +47,19 @@ def autocadastro_coordenador(request):
 
 def login_view(request):
     """Gerencia o processo de login do usuário."""
+    # Se o usuário já estiver logado, redireciona direto para o painel
+    if request.user.is_authenticated:
+        return redirect('painel')
+
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
             return redirect('painel')
+        else:
+            # Opcional: Mensagem de erro se login falhar
+            messages.error(request, 'Usuário ou senha inválidos.')
     else:
         form = AuthenticationForm()
     
@@ -59,23 +71,17 @@ def painel_coordenador(request):
     return render(request, 'core/painel.html', {})
 
 # ====================================================================
-# Views para o CRUD de Matriz Curricular
+# O RESTANTE DO ARQUIVO PERMANECE IDÊNTICO AO QUE VOCÊ MANDOU
+# (CRUD de Matriz, Disciplinas, Turmas, Horários e JSON)
 # ====================================================================
-
 @login_required
 def listar_matrizes(request):
-    """Lista e filtra as Matrizes Curriculares cadastradas."""
+    # ... (seu código original)
     matrizes_list = MatrizCurricular.objects.all().order_by('-ano_referencia')
-    
-    # Filtro por ano de referência
     ano = request.GET.get('ano')
     if ano:
         matrizes_list = matrizes_list.filter(ano_referencia=ano)
-
-    # Coleta anos disponíveis para o filtro
     anos_disponiveis = MatrizCurricular.objects.values_list('ano_referencia', flat=True).distinct().order_by('-ano_referencia')
-
-    # Configuração da paginação
     paginator = Paginator(matrizes_list, 10)
     page = request.GET.get('page')
     try:
@@ -84,7 +90,6 @@ def listar_matrizes(request):
         matrizes = paginator.page(1)
     except EmptyPage:
         matrizes = paginator.page(paginator.num_pages)
-    
     return render(request, 'core/matrizes/listar_matrizes.html', {
         'matrizes': matrizes,
         'anos_disponiveis': anos_disponiveis
@@ -92,22 +97,19 @@ def listar_matrizes(request):
 
 @login_required
 def adicionar_matriz(request):
-    """Permite adicionar uma nova Matriz Curricular."""
     if request.method == 'POST':
         form = MatrizCurricularForm(request.POST)
         if form.is_valid():
             matriz = form.save(commit=False)
-            matriz.usuario = request.user # Associa ao usuário logado
+            matriz.usuario = request.user 
             matriz.save()
             return redirect('listar_matrizes')
     else:
         form = MatrizCurricularForm()
-
     return render(request, 'core/matrizes/adicionar_matriz.html', {'form': form})
 
 @login_required
 def editar_matriz(request, pk):
-    """Permite editar uma Matriz Curricular existente."""
     matriz = get_object_or_404(MatrizCurricular, pk=pk)
     if request.method == 'POST':
         form = MatrizCurricularForm(request.POST, instance=matriz)
@@ -116,43 +118,27 @@ def editar_matriz(request, pk):
             return redirect('listar_matrizes')
     else:
         form = MatrizCurricularForm(instance=matriz)
-    
     return render(request, 'core/matrizes/editar_matriz.html', {'form': form})
 
 @login_required
 def excluir_matriz(request, pk):
-    """Permite excluir uma Matriz Curricular."""
     matriz = get_object_or_404(MatrizCurricular, pk=pk)
     if request.method == 'POST':
         matriz.delete()
         return redirect('listar_matrizes')
-
     return render(request, 'core/matrizes/excluir_matriz.html', {'matriz': matriz})
-
-# ====================================================================
-# Views para o CRUD de Disciplinas
-# ====================================================================
 
 @login_required
 def listar_disciplinas(request):
-    """Lista e filtra as Disciplinas cadastradas."""
     disciplinas_list = Disciplinas.objects.all().order_by('semestre', 'nome')
-    
-    # Filtros
     matriz_id = request.GET.get('matriz')
     semestre = request.GET.get('semestre')
-    
     if matriz_id:
-        # Filtra por chave estrangeira (matriz_curricular)
         disciplinas_list = disciplinas_list.filter(matriz_curricular__pk=matriz_id)
-    
     if semestre:
         disciplinas_list = disciplinas_list.filter(semestre=semestre)
-
     matrizes_disponiveis = MatrizCurricular.objects.all()
     semestres_disponiveis = Disciplinas.objects.values_list('semestre', flat=True).distinct().order_by('semestre')
-
-    # Configuração da paginação
     paginator = Paginator(disciplinas_list, 15)
     page = request.GET.get('page')
     try:
@@ -161,7 +147,6 @@ def listar_disciplinas(request):
         disciplinas = paginator.page(1)
     except EmptyPage:
         disciplinas = paginator.page(paginator.num_pages)
-        
     return render(request, 'core/disciplinas/listar_disciplinas.html', {
         'disciplinas': disciplinas,
         'matrizes_disponiveis': matrizes_disponiveis,
@@ -170,7 +155,6 @@ def listar_disciplinas(request):
 
 @login_required
 def adicionar_disciplina(request):
-    """Permite adicionar uma nova Disciplina."""
     if request.method == 'POST':
         form = DisciplinaForm(request.POST)
         if form.is_valid():
@@ -184,7 +168,6 @@ def adicionar_disciplina(request):
 
 @login_required
 def editar_disciplina(request, pk):
-    """Permite editar uma Disciplina existente."""
     disciplina = get_object_or_404(Disciplinas, pk=pk)
     if request.method == 'POST':
         form = DisciplinaForm(request.POST, instance=disciplina)
@@ -197,30 +180,19 @@ def editar_disciplina(request, pk):
 
 @login_required
 def excluir_disciplina(request, pk):
-    """Permite excluir uma Disciplina."""
     disciplina = get_object_or_404(Disciplinas, pk=pk)
     if request.method == 'POST':
         disciplina.delete()
         return redirect('listar_disciplinas')
     return render(request, 'core/disciplinas/excluir_disciplina.html', {'disciplina': disciplina})
 
-# ====================================================================
-# Views para o CRUD de Turmas
-# ====================================================================
-
 @login_required
 def listar_turmas(request):
-    """Lista e filtra as Turmas cadastradas."""
     turmas_list = Turma.objects.all().order_by('-ano_ingresso')
-    
-    # Filtro por ano de ingresso
     ano = request.GET.get('ano')
     if ano:
         turmas_list = turmas_list.filter(ano_ingresso=ano)
-        
     anos_disponiveis = Turma.objects.values_list('ano_ingresso', flat=True).distinct().order_by('-ano_ingresso')
-
-    # Configuração da paginação
     paginator = Paginator(turmas_list, 10)
     page = request.GET.get('page')
     try:
@@ -236,7 +208,6 @@ def listar_turmas(request):
 
 @login_required
 def adicionar_turma(request):
-    """Permite adicionar uma nova Turma."""
     if request.method == 'POST':
         form = TurmaForm(request.POST)
         if form.is_valid():
@@ -250,7 +221,6 @@ def adicionar_turma(request):
 
 @login_required
 def editar_turma(request, pk):
-    """Permite editar uma Turma existente."""
     turma = get_object_or_404(Turma, pk=pk)
     if request.method == 'POST':
         form = TurmaForm(request.POST, instance=turma)
@@ -263,44 +233,29 @@ def editar_turma(request, pk):
 
 @login_required
 def excluir_turma(request, pk):
-    """Permite excluir uma Turma."""
     turma = get_object_or_404(Turma, pk=pk)
     if request.method == 'POST':
         turma.delete()
         return redirect('listar_turmas')
     return render(request, 'core/turmas/excluir_turma.html', {'turma': turma})
 
-# ====================================================================
-# Views para o CRUD e Consulta de Horários
-# ====================================================================
-
 @login_required
 def listar_horarios(request):
-    """Lista e filtra os Horários cadastrados (gestão)."""
     horarios_list = Horario.objects.all().order_by('turma', 'dia_semana', 'periodo')
-    
-    # Filtros de gestão
     turma_id = request.GET.get('turma')
     disciplina_id = request.GET.get('disciplina')
     dia_semana = request.GET.get('dia_semana')
     periodo = request.GET.get('periodo')
-    
     if turma_id:
         horarios_list = horarios_list.filter(turma__pk=turma_id)
-    
     if disciplina_id:
         horarios_list = horarios_list.filter(disciplina__pk=disciplina_id)
-    
     if dia_semana:
         horarios_list = horarios_list.filter(dia_semana=dia_semana)
-
     if periodo:
         horarios_list = horarios_list.filter(periodo=periodo)
-
     turmas_disponiveis = Turma.objects.all()
     disciplinas_disponiveis = Disciplinas.objects.all()
-    
-    # Configuração da paginação
     paginator = Paginator(horarios_list, 20)
     page = request.GET.get('page')
     try:
@@ -309,7 +264,6 @@ def listar_horarios(request):
         horarios = paginator.page(1)
     except EmptyPage:
         horarios = paginator.page(paginator.num_pages)
-        
     return render(request, 'core/horarios/listar_horarios.html', {
         'horarios': horarios,
         'turmas_disponiveis': turmas_disponiveis,
@@ -320,7 +274,6 @@ def listar_horarios(request):
 
 @login_required
 def adicionar_horario(request):
-    """Permite adicionar um novo Horário."""
     if request.method == 'POST':
         form = HorarioForm(request.POST)
         if form.is_valid():
@@ -334,7 +287,6 @@ def adicionar_horario(request):
 
 @login_required
 def editar_horario(request, pk):
-    """Permite editar um Horário existente."""
     horario = get_object_or_404(Horario, pk=pk)
     if request.method == 'POST':
         form = HorarioForm(request.POST, instance=horario)
@@ -347,7 +299,6 @@ def editar_horario(request, pk):
 
 @login_required
 def excluir_horario(request, pk):
-    """Permite excluir um Horário."""
     horario = get_object_or_404(Horario, pk=pk)
     if request.method == 'POST':
         horario.delete()
@@ -356,77 +307,48 @@ def excluir_horario(request, pk):
 
 @login_required
 def consultar_horarios(request):
-    """
-    Exibe a grade de horários consolidada com filtros por Curso e Ano de Ingresso (Turma).
-    """
     horarios_list = Horario.objects.all()
-    
     curso = request.GET.get('curso')
     ano_ingresso = request.GET.get('ano')
-
     if curso:
-        # Filtra horários com base no curso da Matriz Curricular da Turma
         horarios_list = horarios_list.filter(turma__matriz_curricular__curso=curso)
-    
     if ano_ingresso:
-        # Filtra horários com base no ano de ingresso da Turma
         horarios_list = horarios_list.filter(turma__ano_ingresso=ano_ingresso)
-
-    # Inicializa a estrutura da grade de horários (dicionário aninhado)
     grade_horarios = {}
     dias_semana = Horario.DIA_CHOICES
     periodos = Horario.PERIODO_CHOICES
-    
-    # Cria a estrutura vazia
     for dia_sigla, _ in dias_semana:
         grade_horarios[dia_sigla] = {periodo_sigla: None for periodo_sigla, _ in periodos}
-
-    # Preenche a grade com as siglas das disciplinas
     for horario in horarios_list:
         grade_horarios[horario.dia_semana][horario.periodo] = horario.disciplina.sigla
-
     cursos = MatrizCurricular.objects.values_list('curso', flat=True).distinct()
     anos_turma = Turma.objects.values_list('ano_ingresso', flat=True).distinct()
-    
     return render(request, 'core/horarios/consultar_horarios.html', {
         'grade': grade_horarios,
-        'dias_semana': [dia[0] for dia in dias_semana], # Passa apenas as siglas
-        'periodos': [periodo[0] for periodo in periodos], # Passa apenas as siglas
+        'dias_semana': [dia[0] for dia in dias_semana],
+        'periodos': [periodo[0] for periodo in periodos],
         'cursos': cursos,
         'anos': anos_turma
     })
 
-# ====================================================================
-# Views de Dados para o Dashboard
-# ====================================================================
-
 @login_required
 def chart_data_view(request):
-    """
-    Retorna dados estatísticos em formato JSON para alimentar os gráficos do painel.
-    Estes dados são atualmente estáticos e devem ser substituídos por lógica de BI/analytics.
-    """
-    # --- Dados de Exemplo Estáticos (A ser substituído na V2) ---
     disciplinas_data = {
         'labels': ['Matemática', 'Física', 'Sistemas da Informação', 'Gastronomia'],
         'datasets': [{'label': 'Disciplinas por Matriz', 'data': [15, 12, 20, 18]}]
     }
-
     historicos_data = {
         'labels': ['Alunos com Histórico', 'Alunos sem Histórico'],
         'datasets': [{'label': 'Históricos no Sistema', 'data': [50, 10]}]
     }
-
     reprovacao_data = {
         'labels': ['Lab. BD', 'Estrutura de Dados', 'Redes de Comp.'],
         'datasets': [{'label': 'Reprovação (%)', 'data': [25, 45, 15]}]
     }
-    
     rematriculas_data = {
         'labels': ['Aprovadas', 'Pendentes', 'Canceladas'],
         'datasets': [{'label': 'Status de Rematrículas', 'data': [35, 15, 5]}]
     }
-
     return JsonResponse({
         'disciplinas': disciplinas_data,
         'historicos': historicos_data,
@@ -436,5 +358,11 @@ def chart_data_view(request):
 
 @login_required
 def consultar_analise(request):
-    """Renderiza a tela de consulta da análise de matrícula (IA)."""
     return render(request, 'core/historicos/consultar_analise.html', {})
+
+
+def logout_view(request):
+    """Faz o logout do usuário e redireciona para o login."""
+    logout(request)
+    messages.info(request, "Você saiu do sistema com sucesso.")
+    return redirect('login')

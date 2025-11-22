@@ -402,7 +402,21 @@
                             <a href="{% url 'analytics:listar_analises' %}">Consultar Análises</a>
                         </div>
                     </li>
-                    <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+                    <li><a href="{% url 'logout' %}" style="text-decoration: none; display: block; margin-bottom: 15px;">
+            <button type="button" style="
+                width: 100%;
+                background-color: #e74c3c; 
+                color: white; 
+                border: none; 
+                padding: 12px; 
+                border-radius: 8px; 
+                cursor: pointer; 
+                font-weight: 600;
+                transition: background 0.3s;
+                font-family: 'Poppins', sans-serif;">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </a></li>
                 </ul>
             </nav>
             <div class="footer">

@@ -9,7 +9,7 @@ urlpatterns = [
     path('cadastro/', views.autocadastro_coordenador, name='autocadastro_coordenador'),
     path('login/', views.login_view, name='login'),
     path('painel/', views.painel_coordenador, name='painel'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='landing_page'), name='logout'),
+    path('logout/', views.logout_view, name='logout'),
     
     # URLs para o CRUD de Matriz Curricular
     path('matrizes/', views.listar_matrizes, name='listar_matrizes'),

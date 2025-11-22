@@ -44,6 +44,52 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
+        /* --- ÁREA DE MENSAGENS (NOVO CSS) --- */
+        .messages-container {
+            width: 100%;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            font-weight: 500;
+            animation: slideDown 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Sucesso (Verde Translúcido) */
+        .alert.success {
+            background-color: rgba(46, 204, 113, 0.25);
+            border: 1px solid #2ecc71;
+            color: #d5f5e3; /* Texto verde claro legível */
+        }
+
+        /* Erro (Vermelho Translúcido) */
+        .alert.error {
+            background-color: rgba(231, 76, 60, 0.25);
+            border: 1px solid #e74c3c;
+            color: #fadbd8; /* Texto vermelho claro legível */
+        }
+
+        /* Info/Warning (Amarelo Translúcido - Opcional) */
+        .alert.warning, .alert.info {
+            background-color: rgba(241, 196, 15, 0.25);
+            border: 1px solid #f1c40f;
+            color: #fcf3cf;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* ------------------------------------ */
+
         .form-group {
             margin-bottom: 20px;
             text-align: left;
@@ -122,6 +168,16 @@
 <body>
     <div class="container">
         <h1>Login</h1>
+
+        {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                    <div class="alert {{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
         <form method="post">
             {% csrf_token %}
             <div class="form-group">
