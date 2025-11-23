@@ -1,175 +1,161 @@
 {% extends 'core/base.html' %}
-{% load static %}{% block title %}Importar Histórico{% endblock %}
-{% block page_title %}Importar Histórico de Aluno{% endblock %} 
+
+{% block title %}Importar Histórico{% endblock %}
+{% block page_title %}Importar Histórico de Aluno{% endblock %}
 
 {% block content %}
 <style>
-    /* Estilo para os botões de ação como na sua imagem */
-    .action-buttons a, .action-buttons button {
-        color: #fff;
-        text-decoration: none;
-        padding: 5px 10px;
-        border-radius: 5px;
-        margin-right: 5px;
-        border: none;
-        cursor: pointer;
-        font-size: 0.9em;
+    .form-container {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
-    .btn-view { background-color: #0d6efd; } /* Azul */
-    .btn-edit { background-color: #ffc107; color: #000 !important; } /* Amarelo */
-    .btn-delete { background-color: #dc3545; } /* Vermelho */
-    .btn-disabled { background-color: #6c757d; cursor: not-allowed; } /* Cinza */
+    
+    .form-group { margin-bottom: 20px; }
+    
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #fff;
+    }
+    
+    input[type="file"] {
+        background-color: rgba(255, 255, 255, 0.2);
+        padding: 10px;
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 8px;
+        width: 100%;
+        cursor: pointer;
+    }
+    
+    .alert-error {
+        background-color: rgba(220, 53, 69, 0.2);
+        border: 1px solid #dc3545;
+        color: #ffcdd2;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    /* Estilo do Badge de Status */
+    .status-badge {
+        background-color: #ffb703;
+        color: #2c3e50;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.8em;
+        font-weight: bold;
+        margin-left: 10px;
+    }
 </style>
 
-<form id="uploadForm" class="form-container" method="post" enctype="multipart/form-data" 
-      data-url="{% url 'upload:importar_historico_action' %}">
-    {% csrf_token %}
+<div class="form-container">
     
-    <div class="form-row">
+    {% if form.errors %}
+        <div class="alert-error">
+            <strong><i class="fas fa-exclamation-triangle"></i> Erro no formulário:</strong>
+            <ul style="margin-top: 5px; padding-left: 20px;">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="uploadForm">
+        {% csrf_token %}
+
         <div class="form-group">
-            <label for="{{ form.nome.id_for_label }}">Nome do Aluno:</label>
+            <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
             {{ form.nome }}
         </div>
+
         <div class="form-group">
-            <label for="{{ form.matricula.id_for_label }}">Matrícula:</label>
+            <label for="{{ form.matricula.id_for_label }}">{{ form.matricula.label }}</label>
             {{ form.matricula }}
         </div>
-    </div>
-    
-    <div class="form-row">
+
         <div class="form-group">
-            <label for="{{ form.curso.id_for_label }}">Curso:</label>
+            <label for="{{ form.curso.id_for_label }}">{{ form.curso.label }}</label>
             {{ form.curso }}
         </div>
+
         <div class="form-group">
-            <label for="{{ form.ano_ingresso.id_for_label }}">Ano de Ingresso:</label>
+            <label for="{{ form.ano_ingresso.id_for_label }}">{{ form.ano_ingresso.label }}</label>
             {{ form.ano_ingresso }}
         </div>
-    </div>
 
-    <div class="form-row">
-        <div class="form-group" style="flex-grow: 1;">
-            <label for="{{ form.pdf_file.id_for_label }}">Arquivo PDF do Histórico:</label>
-            {{ form.pdf_file }}
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 25px 0;">
+
+        <div class="form-group">
+            <label for="{{ form.arquivo.id_for_label }}" style="color: #ffb703; font-size: 1.1em;">
+                <i class="fas fa-file-pdf"></i> {{ form.arquivo.label }}
+            </label>
+            {{ form.arquivo }}
+            <small style="color: #ccc; display: block; margin-top: 5px;">
+                Selecione o arquivo PDF do histórico escolar.
+            </small>
         </div>
-    </div>
 
-    <div class="button-group">
-        <button type="submit" class="cta-button">
-            <i class="fas fa-upload"></i> Enviar e Processar
-        </button>
-    </div>
-</form>
-
-<div id="loading" class="loading-overlay" style="display: none;">
-    <div class="loading-spinner"></div>
-    <p>Processando PDF com IA... Isso pode levar alguns segundos.</p>
+        <div style="margin-top: 30px;">
+            <button type="submit" class="cta-button" id="submitBtn" style="width: 100%; justify-content: center;">
+                <i class="fas fa-upload" style="margin-right: 10px;"></i> 
+                <span id="btnText">Enviar e Processar</span>
+            </button>
+        </div>
+    </form>
 </div>
 
-<div id="feedback" style="display: none; margin-top: 20px;"></div>
-
-
-<hr style="margin: 30px 0; border-color: rgba(255, 255, 255, 0.2);">
-
-
-<h2 style="text-align: left; font-size: 1.5em; margin-bottom: 20px;">Último Histórico Enviado</h2>
-
-{% if ultimo_historico %}
-    <table>
-        <thead>
-            <tr>
-                <th>Aluno</th>
-                <th>Matrícula</th>
-                <th>Data do Upload</th>
-                <th>Status</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>{{ ultimo_historico.aluno.nome }}</td>
-                <td>{{ ultimo_historico.aluno.matricula }}</td>
-                <td>{{ ultimo_historico.data_upload|date:"d/m/Y H:i" }}</td>
-                <td>
-                    <span class="status-badge 
-                        {% if ultimo_historico.status == 'CONCLUIDO' %}status-concluido
-                        {% elif ultimo_historico.status == 'PENDENTE' %}status-pendente
-                        {% else %}status-erro
-                        {% endif %}">
-                        {{ ultimo_historico.get_status_display }}
-                    </span>
-                </td>
-                <td class="action-buttons">
-                    <a href="{% url 'upload:consultar_historico_detalhe' pk=ultimo_historico.pk %}" class="btn-view" title="Visualizar">
-                        <i class="fas fa-eye"></i>
-                    </a>
-                    
-                    <a href="#" class="btn-edit btn-disabled" title="Editar (Em breve)">
-                        <i class="fas fa-pencil-alt"></i>
-                    </a>
-                    
-                    <form method="POST" action="{% url 'upload:excluir_historico' pk=ultimo_historico.pk %}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este histórico?');">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-delete" title="Excluir">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </form>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-{% else %}
-    <p style="text-align: center; font-size: 1.1em; color: #aaa;">Nenhum histórico foi enviado ainda.</p>
-{% endif %}
-
+<div style="margin-top: 40px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 10px;">
+    <h3 style="margin-bottom: 10px; font-size: 1.2em; color: #ffb703;">
+        <i class="fas fa-history"></i> Último Histórico Enviado
+    </h3>
+    
+    {% if ultimo_historico %}
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <strong>{{ ultimo_historico.aluno.nome }}</strong> <br>
+                <small style="color: #ccc;">Enviado em: {{ ultimo_historico.data_upload|date:"d/m/Y H:i" }}</small>
+            </div>
+            <div>
+                <span class="status-badge">{{ ultimo_historico.get_status_display }}</span>
+                
+                <a href="{% url 'upload:consultar_historico_detalhe' pk=ultimo_historico.pk %}" class="cta-button" style="padding: 5px 15px; font-size: 0.9em; margin-left: 10px; background-color: #2ecc71; color: white;">
+                    Ver histórico <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    {% else %}
+        <p style="color: #ccc; font-style: italic;">Nenhum histórico foi enviado ainda.</p>
+    {% endif %}
+</div>
 
 <script>
-document.getElementById('uploadForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    var form = this;
-    var url = form.getAttribute('data-url');
-    var formData = new FormData(form);
-    
-    var loading = document.getElementById('loading');
-    var feedback = document.getElementById('feedback');
-    
-    loading.style.display = 'flex'; // Mostrar spinner
-    feedback.style.display = 'none'; // Esconder feedback antigo
-    
-    fetch(url, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        loading.style.display = 'none'; // Esconder spinner
-        if (data.sucesso) {
-            feedback.className = 'feedback-success';
-            feedback.innerHTML = `<i class="fas fa-check-circle"></i> ${data.mensagem}`;
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        // Pega o botão e o texto
+        var btn = document.getElementById('submitBtn');
+        var btnText = document.getElementById('btnText');
+        
+        // Verifica se o form é válido (básico do HTML5) antes de ativar o loader
+        if (this.checkValidity()) {
+            // Desabilita o botão para evitar duplo clique
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.style.cursor = 'wait';
             
-            // Recarrega a página para mostrar o item na lista "Último Histórico"
-            setTimeout(function() {
-                location.reload(); 
-            }, 1500);
+            // Muda o texto e adiciona o spinner girando
+            btnText.innerHTML = 'Aguarde, analisando histórico...';
             
-        } else {
-            feedback.className = 'feedback-error';
-            feedback.innerHTML = `<i class="fas fa-times-circle"></i> Erro: ${data.erro}`;
+            // Troca o ícone de upload pelo spinner
+            var icon = btn.querySelector('i');
+            icon.className = 'fas fa-spinner fa-spin';
         }
-        feedback.style.display = 'block';
-    })
-    .catch(error => {
-        console.error('Erro no fetch:', error);
-        loading.style.display = 'none';
-        feedback.className = 'feedback-error';
-        feedback.innerHTML = '<i class="fas fa-times-circle"></i> Erro de comunicação com o servidor.';
-        feedback.style.display = 'block';
     });
-});
 </script>
 
 {% endblock %}

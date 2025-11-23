@@ -1,6 +1,6 @@
 from django.db import models
-# Importamos o modelo de usuário da aplicação 'core'
-from core.models import Usuario 
+# IMPORTANTE: Precisamos importar o 'Curso' aqui para usá-lo abaixo
+from core.models import Usuario, Curso 
 
 # ====================================================================
 # Modelos de Aluno e Histórico
@@ -9,12 +9,17 @@ from core.models import Usuario
 class Aluno(models.Model):
     """
     Representa o registro básico de um Aluno na instituição. 
-    Este modelo é preenchido manualmente e com o upload do histórico.
     """
     nome = models.CharField(max_length=100)
     matricula = models.CharField(max_length=10, unique=True)
-    curso = models.CharField(max_length=100, verbose_name="Curso de Ingresso")
-    # Campo adicionado para preenchimento manual no formulário
+    
+    # Aqui usamos a classe 'Curso' que importamos lá em cima
+    curso = models.ForeignKey(
+        Curso, 
+        on_delete=models.CASCADE, 
+        verbose_name="Curso de Ingresso"
+    )
+    
     ano_ingresso = models.CharField(max_length=6, verbose_name="Ano de Ingresso")
     
     class Meta:
@@ -23,14 +28,12 @@ class Aluno(models.Model):
         verbose_name_plural = "Alunos"
 
     def __str__(self):
-        """Retorna o nome e a matrícula do aluno."""
         return f"{self.nome} ({self.matricula})"
 
 class Historico(models.Model):
     """
     Representa o registro de um Histórico Escolar importado e processado.
     """
-    # Constantes para status de processamento (Boas Práticas)
     STATUS_CHOICES = [
         ('PENDENTE', 'Processamento Pendente'),
         ('CONCLUIDO', 'Processamento Concluído'),
@@ -41,11 +44,11 @@ class Historico(models.Model):
         Aluno, 
         on_delete=models.CASCADE, 
         verbose_name="Aluno",
-        related_name='historicos' # Permite consultar facilmente historicos do aluno
+        related_name='historicos'
     )
     usuario = models.ForeignKey(
         Usuario, 
-        on_delete=models.SET_NULL, # Mantém o histórico mesmo que o coordenador seja excluído
+        on_delete=models.SET_NULL, 
         null=True, 
         verbose_name="Coordenador Responsável"
     )
@@ -59,7 +62,6 @@ class Historico(models.Model):
         default='PENDENTE',
         verbose_name="Status de Processamento"
     )
-    # Campo para armazenar o caminho do arquivo (opcional, útil para debug)
     arquivo_original = models.FileField(
         upload_to='historicos/', 
         null=True, 
@@ -71,16 +73,13 @@ class Historico(models.Model):
         db_table = 'HISTORICO'
         verbose_name = "Histórico Escolar"
         verbose_name_plural = "Históricos Escolares"
-        # Garante que um aluno tenha apenas um histórico 'CONCLUIDO' de cada vez (opcional, mas útil)
-        # unique_together = ('aluno', 'status') 
         
     def __str__(self):
-        """Retorna a descrição do histórico."""
         return f"Histórico de {self.aluno.nome} - {self.status}"
 
 class HistoricoItens(models.Model):
     """
-    Detalha as disciplinas contidas no Histórico Escolar (as linhas lidas do PDF).
+    Detalha as disciplinas contidas no Histórico Escolar (linhas do PDF).
     """
     historico = models.ForeignKey(
         Historico, 
@@ -88,14 +87,13 @@ class HistoricoItens(models.Model):
         verbose_name="Histórico",
         related_name='itens'
     )
-    # Dados da disciplina conforme o PDF
     disciplina_nome = models.CharField(max_length=200, verbose_name="Nome da Disciplina")
     disciplina_sigla = models.CharField(max_length=10, verbose_name="Sigla")
     ch = models.IntegerField(verbose_name="Carga Horária")
     nota = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     frequencia = models.IntegerField(null=True, blank=True, verbose_name="Frequência (%)")
-    status_disciplina = models.CharField(max_length=50, verbose_name="Situação") # Ex: APROVADO, REPROVADO, CANCELADO
-    semestre_cursado = models.CharField(max_length=10, verbose_name="Semestre Cursado") # Ex: 2021.1
+    status_disciplina = models.CharField(max_length=50, verbose_name="Situação") 
+    semestre_cursado = models.CharField(max_length=10, verbose_name="Semestre Cursado")
 
     class Meta:
         db_table = 'HISTORICO_ITENS'
@@ -103,5 +101,4 @@ class HistoricoItens(models.Model):
         verbose_name_plural = "Itens de Histórico"
 
     def __str__(self):
-        """Retorna o nome da disciplina no histórico."""
         return self.disciplina_nome

@@ -1,72 +1,49 @@
 from django import forms
-# Não precisamos mais importar os modelos do core
-# from core.models import MatrizCurricular 
+from core.models import Curso
+from .models import Aluno, Historico
 
-# -------------------------------------------------------------------
-# LISTA DE CURSOS FIXA (HARDCODED)
-# -------------------------------------------------------------------
-# Como você mencionou, aqui fica a lista de cursos do seu campus
-# Adicione ou remova os cursos que precisar
-CURSO_CHOICES = [
-    ('', 'Selecione um curso'), # Este é o "placeholder"
-    ('LICENCIATURA EM MATEMÁTICA', 'Licenciatura em Matemática'),
-    ('LICENCIATURA EM FÍSICA', 'Licenciatura em Física'),
-    ('TECNÓLOGO EM GASTRONOMIA', 'Tecnólogo em Gastronomia'),
-    ('BACHARELADO EM SISTEMAS DE INFORMAÇÃO', 'Bacharelado em Sistemas de Informação'),
-    ('TECNÓLOGO EM GESTÃO DE TURISMO', 'Tecnólogo em Gestão de Turismo'),
-    # Adicione os outros cursos aqui...
-]
-
-# -------------------------------------------------------------------
-# SEU FORMULÁRIO MODIFICADO
-# -------------------------------------------------------------------
-class HistoricoUploadForm(forms.Form):
-    # Campos do Aluno
+class UploadHistoricoForm(forms.ModelForm):
+    """
+    Formulário unificado: Cria/Atualiza o Aluno e recebe o PDF.
+    """
     nome = forms.CharField(
-        max_length=100, 
-        widget=forms.TextInput(attrs={'placeholder': 'Nome completo do Aluno', 'class': 'form-control'})
+        label="Nome do Aluno",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome completo'})
     )
     matricula = forms.CharField(
-        max_length=10, 
-        widget=forms.TextInput(attrs={'placeholder': 'Nº da Matrícula', 'class': 'form-control'})
+        label="Matrícula",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 20231001', 'maxlength': '10'})
     )
     
-    # --- CAMPO MODIFICADO ---
-    # Agora usa a lista de cursos fixa
-    curso = forms.ChoiceField(
-        choices=CURSO_CHOICES, # Usa a lista estática que definimos acima
-        widget=forms.Select(attrs={'class': 'form-control'})
+    # Dropdown dinâmico ligado ao banco de dados
+    curso = forms.ModelChoiceField(
+        queryset=Curso.objects.all().order_by('nome'),
+        label="Curso",
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label="Selecione o Curso..."
     )
-    # -------------------------
 
     ano_ingresso = forms.CharField(
-        max_length=6, 
-        widget=forms.TextInput(attrs={'placeholder': 'Ex: 2019.1', 'class': 'form-control'})
+        label="Ano de Ingresso",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 2023'})
     )
     
-    # Campo do Arquivo
-    pdf_file = forms.FileField(
+    # Campo de Arquivo (Processado manualmente na View)
+    arquivo = forms.FileField(
         label="Arquivo PDF do Histórico",
-        widget=forms.FileInput(attrs={'class': 'form-control'})
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'application/pdf'})
     )
-    
+
+    class Meta:
+        model = Aluno
+        fields = ['nome', 'matricula', 'curso', 'ano_ingresso']
+
     def clean_matricula(self):
-        """
-        Validação customizada para garantir que a matrícula seja única
-        (embora o get_or_create na view já trate isso, é bom ter no form).
-        """
-        matricula = self.cleaned_data.get('matricula')
-        # Verifica se já existe um aluno com essa matrícula (case-insensitive)
-        # if Aluno.objects.filter(matricula__iexact=matricula).exists():
-        #     raise forms.ValidationError("Já existe um aluno cadastrado com esta matrícula.")
-        # Comentado pois get_or_create lida com isso. Descomente se preferir a validação aqui.
-        return matricula
-    
-    def clean_pdf_file(self):
-        """Validação para o tipo de arquivo PDF."""
-        file = self.cleaned_data.get('pdf_file')
-        if file:
-            if not file.name.lower().endswith('.pdf'):
-                raise forms.ValidationError("O arquivo deve ser do tipo PDF.")
-            # Você pode adicionar outras validações aqui (tamanho, etc.)
-        return file
+        return self.cleaned_data['matricula'].strip()
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get('arquivo')
+        if arquivo:
+            if not arquivo.name.lower().endswith('.pdf'):
+                raise forms.ValidationError("O arquivo deve ser um PDF.")
+        return arquivo

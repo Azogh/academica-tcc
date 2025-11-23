@@ -43,9 +43,11 @@
         height: 100%;
     }
 
-    .analysis-card:hover {
+    /* Comportamento Hover apenas para cards ativos */
+    .analysis-card:not(.disabled):hover {
         background: rgba(255, 255, 255, 0.1);
         transform: translateY(-2px);
+        border-color: rgba(255, 183, 3, 0.5);
     }
 
     .card-title {
@@ -56,6 +58,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        flex-wrap: wrap;
     }
 
     .card-desc {
@@ -82,6 +85,30 @@
         font-size: 1.2em;
     }
     .hidden-input:checked + .analysis-card .check-icon { opacity: 1; }
+
+    /* --- ESTILOS PARA ITENS DESATIVADOS (NOVO) --- */
+    .analysis-card.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        background: rgba(0, 0, 0, 0.2);
+        border-color: #444;
+    }
+    
+    .analysis-card.disabled .card-title {
+        color: #888;
+    }
+
+    .dev-badge {
+        background-color: #e74c3c; /* Vermelho suave */
+        color: white;
+        font-size: 0.6em;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-left: auto; /* Empurra para a direita */
+    }
 
     /* --- Estilo dos Dias da Semana (Botões Toggle) --- */
     .days-container {
@@ -142,50 +169,79 @@
         background-color: #fb8500;
         box-shadow: 0 6px 20px rgba(0,0,0,0.3);
     }
+
+    .cancel-button {
+        color: #ffb703;
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: color 0.2s;
+    }
+    .cancel-button:hover {
+        color: #fb8500;
+        text-decoration: underline;
+    }
 </style>
 
+<!-- BOTÃO DE RETORNO -->
+<div style="margin-bottom: 20px;">
+    <a href="{% url 'upload:consultar_historico_detalhe' pk=historico.pk %}" class="cancel-button">
+        <i class="fas fa-arrow-left"></i> Voltar para Detalhes do Histórico
+    </a>
+</div>
+
+<!-- Informações do Aluno -->
 <div class="student-card">
     <p>Aluno: <strong>{{ historico.aluno.nome|default:"NOME NÃO ENCONTRADO" }}</strong></p>
-    
     <p>Matrícula: <strong>{{ historico.aluno.matricula|default:"--" }}</strong></p>
-    
     <p>Curso: <strong>{{ historico.aluno.curso|default:"SISTEMAS DE INFORMAÇÃO" }}</strong></p>
 </div>
 
 <form method="post">
     {% csrf_token %}
 
+    <!-- SEÇÃO 1: TIPO DE ANÁLISE (Cards) -->
     <h3 style="margin-bottom: 20px; color: #fff;">1. Escolha o Modo de Análise</h3>
     
     <div class="selection-grid">
+        <!-- Opção Padrão (Única Ativa) -->
         <label>
             <input type="radio" name="tipo_analise" value="padrao" class="hidden-input" checked>
             <div class="analysis-card">
                 <i class="fas fa-check-circle check-icon"></i>
-                <div class="card-title"><i class="fas fa-balance-scale"></i> Padrão</div>
-                <div class="card-desc">Sugere o caminho regular, priorizando a grade ideal e encaixando horários disponíveis.</div>
+                <div class="card-title"><i class="fas fa-balance-scale"></i> Regular / Padrão</div>
+                <div class="card-desc">Sugere a grade ideal seguindo o fluxo do curso, priorizando reprovações e encaixando horários disponíveis.</div>
             </div>
         </label>
 
-        <label>
-            <input type="radio" name="tipo_analise" value="soft" class="hidden-input">
-            <div class="analysis-card">
-                <i class="fas fa-check-circle check-icon"></i>
-                <div class="card-title"><i class="fas fa-feather-alt"></i> Soft (Leve)</div>
+        <!-- Opção Soft (Desativada) -->
+        <label style="cursor: not-allowed;">
+            <input type="radio" name="tipo_analise" value="soft" class="hidden-input" disabled>
+            <div class="analysis-card disabled">
+                <div class="card-title">
+                    <i class="fas fa-feather-alt"></i> Soft
+                    <span class="dev-badge">Em Breve</span>
+                </div>
                 <div class="card-desc">Prioriza disciplinas com menor taxa de reprovação e menor carga horária. Ideal para quem trabalha.</div>
             </div>
         </label>
 
-        <label>
-            <input type="radio" name="tipo_analise" value="hardcore" class="hidden-input">
-            <div class="analysis-card">
-                <i class="fas fa-check-circle check-icon"></i>
-                <div class="card-title"><i class="fas fa-fire"></i> Hardcore</div>
+        <!-- Opção Hardcore (Desativada) -->
+        <label style="cursor: not-allowed;">
+            <input type="radio" name="tipo_analise" value="hardcore" class="hidden-input" disabled>
+            <div class="analysis-card disabled">
+                <div class="card-title">
+                    <i class="fas fa-fire"></i> Hardcore
+                    <span class="dev-badge">Em Breve</span>
+                </div>
                 <div class="card-desc">Máximo de disciplinas possível, preenchendo todas as janelas e ignorando dificuldade.</div>
             </div>
         </label>
     </div>
 
+    <!-- SEÇÃO 2: DIAS EXCLUÍDOS (Botões) -->
     <h3 style="margin-bottom: 10px; color: #fff;">2. Restrições de Horário</h3>
     <p style="margin-bottom: 20px; font-size: 0.9em; color: #ccc;">Clique nos dias em que o aluno <strong>NÃO</strong> pode ter aulas (ex: trabalho, religião).</p>
 
@@ -216,10 +272,11 @@
         </label>
     </div>
 
+    <!-- BOTÃO DE AÇÃO -->
     <div class="action-area">
         <button type="submit" class="btn-processar">
-            <i class="fas fa-cogs"></i>
-            Processar Análise com IA
+            <i class="fas fa-robot"></i>
+            Gerar Grade com IA
         </button>
     </div>
 
