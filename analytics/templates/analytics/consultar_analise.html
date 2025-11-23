@@ -117,7 +117,8 @@
             <i class="fas fa-pencil-alt"></i> Editar Grade
         </a>
         
-        <a href="#" class="cta-button">
+        <!-- ✅ BOTÃO DE IMPRESSÃO CORRIGIDO ✅ -->
+        <a href="{% url 'analytics:imprimir_solicitacao' analise.pk %}" target="_blank" class="cta-button">
             <i class="fas fa-print"></i> Imprimir Solicitação
         </a>
     </div>

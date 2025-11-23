@@ -20,4 +20,5 @@ urlpatterns = [
     
     # 5. Ação de excluir
     path('excluir/<int:analise_pk>/', views.excluir_analise, name='excluir_analise'),
+    path('imprimir-solicitacao/<int:analise_id>/', views.gerar_pdf_solicitacao, name='imprimir_solicitacao'),
 ]

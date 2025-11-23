@@ -1,9 +1,18 @@
+import io
+import json
+from datetime import datetime
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.db import transaction 
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-import json
+from django.http import FileResponse
+
+# Imports para PDF (ReportLab)
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
 
 # Modelos que vamos consultar
 from upload.models import Historico, HistoricoItens
@@ -29,9 +38,7 @@ def serializar_historico(historico_obj):
 
 def serializar_matriz(curso_nome):
     try:
-        # AJUSTE 1: Como 'curso' agora é ForeignKey, usamos curso__nome
         matriz = MatrizCurricular.objects.filter(curso__nome=curso_nome).first()
-        
         if not matriz: return "[]"
         
         disciplinas = Disciplinas.objects.filter(matriz_curricular=matriz).prefetch_related('pre_requisitos')
@@ -49,22 +56,15 @@ def serializar_matriz(curso_nome):
         return "[]"
 
 def serializar_horarios(dias_excluidos_lista=None, curso_nome=None):
-    """
-    Retorna os horários disponíveis filtrados por curso e dias excluídos.
-    """
     if dias_excluidos_lista is None: dias_excluidos_lista = []
     
-    # Busca todos os horários trazendo as relações necessárias
-    # AJUSTE 2: Trazemos também o curso da matriz para poder filtrar
     query = Horario.objects.select_related('disciplina', 'turma', 'disciplina__matriz_curricular__curso')
     
     if curso_nome:
-        # AJUSTE 3: Filtra apenas horários de disciplinas que pertencem ao curso do aluno
         query = query.filter(disciplina__matriz_curricular__curso__nome=curso_nome)
         
     horarios = query.all()
     
-    # Lógica de agrupar horários (para disciplinas de 4 créditos)
     grupos_disciplinas = {}
     for h in horarios:
         chave = (h.turma.id, h.disciplina.id)
@@ -116,13 +116,8 @@ def analisar_historico(request, historico_pk):
 
         try:
             historico_json = serializar_historico(historico)
-            
-            # Tenta obter o curso do aluno
             curso_aluno = getattr(historico.aluno, 'curso', None) 
-            
             matriz_json = serializar_matriz(curso_aluno)
-            
-            # AJUSTE 4: Passamos o curso_aluno para filtrar os horários
             horarios_json = serializar_horarios(dias_excluidos_lista, curso_aluno)
 
             lista_ids_horarios = gemini_analytics.gerar_analise_grade(
@@ -168,11 +163,8 @@ def analisar_historico(request, historico_pk):
 @login_required
 def consultar_analise(request, analise_pk):
     analise = get_object_or_404(Analise, pk=analise_pk)
-    
-    # Busca todos os itens sugeridos para esta análise
     itens = AnaliseItens.objects.filter(analise=analise).select_related('disciplina')
     
-    # --- LÓGICA DE MONTAGEM DA GRADE ---
     itens_map = {(i.periodo, i.dia_semana): i for i in itens}
     
     periodos_definidos = ['1-2', '3-4', '5-6', '7-8', 'N1-N2', 'N3-N4'] 
@@ -209,7 +201,6 @@ def editar_analise(request, analise_pk):
         
         try:
             with transaction.atomic():
-                # --- NOVA VALIDAÇÃO DE CONFLITOS ---
                 novos_horarios = Horario.objects.filter(pk__in=horarios_selecionados_ids)
                 
                 slots_ocupados = set()
@@ -220,7 +211,6 @@ def editar_analise(request, analise_pk):
                         raise Exception(f"Conflito detectado: Você selecionou duas disciplinas para {h.dia_semana} no período {h.periodo}.")
                     
                     slots_ocupados.add(slot_signature)
-                # -----------------------------------
 
                 AnaliseItens.objects.filter(analise=analise).delete()
                 
@@ -238,10 +228,8 @@ def editar_analise(request, analise_pk):
         except Exception as e:
             messages.error(request, f"Erro ao salvar: {e}")
     
-    # AJUSTE 5: Filtra os horários disponíveis para edição também pelo curso
     todos_horarios = Horario.objects.select_related('disciplina', 'turma', 'disciplina__matriz_curricular__curso')
     
-    # Tenta filtrar pelo curso do aluno da análise, se possível
     curso_aluno = getattr(analise.historico.aluno, 'curso', None)
     if curso_aluno:
         todos_horarios = todos_horarios.filter(disciplina__matriz_curricular__curso__nome=curso_aluno)
@@ -277,3 +265,143 @@ def excluir_analise(request, analise_pk):
     analise = get_object_or_404(Analise, pk=analise_pk, coordenador=request.user)
     analise.delete()
     return redirect('analytics:listar_analises')
+
+@login_required
+def gerar_pdf_solicitacao(request, analise_id):
+    """
+    Gera o PDF de solicitação de matrícula (Rematrícula) com texto formal.
+    """
+    # 1. Recuperar dados
+    analise = get_object_or_404(Analise, pk=analise_id)
+    aluno = analise.historico.aluno
+    coordenador = request.user
+    
+    itens = AnaliseItens.objects.filter(analise=analise).select_related('disciplina')
+    
+    # Agrupando disciplinas únicas
+    disciplinas_unicas = {}
+    for item in itens:
+        if item.disciplina.pk not in disciplinas_unicas:
+            disciplinas_unicas[item.disciplina.pk] = item.disciplina
+
+    # 2. Configurar Canvas
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    largura, altura = A4
+    
+    # --- Título ---
+    c.setTitle(f"Rematricula_{aluno.matricula}")
+    c.setFont("Helvetica-Bold", 16)
+    c.drawCentredString(largura / 2, altura - 50, "REQUERIMENTO DE REMATRÍCULA")
+    
+    # Subtítulo com Semestre
+    c.setFont("Helvetica", 12)
+    semestre_atual = f"{datetime.now().year}/{'1' if datetime.now().month < 7 else '2'}"
+    c.drawCentredString(largura / 2, altura - 70, f"Semestre Letivo {semestre_atual}")
+
+    # Linha divisória
+    c.setLineWidth(1)
+    c.line(50, altura - 85, largura - 50, altura - 85)
+
+    # --- TEXTO FORMAL (VERBOSO) ---
+    # Configurações de posição
+    inicio_texto_y = altura - 120
+    espaco_entre_linhas = 18
+    
+    # Tratamento de dados
+    ano_inicio = aluno.matricula[:4] if aluno.matricula and len(aluno.matricula) >= 4 else "____"
+    nome_aluno = aluno.nome.upper() if aluno.nome else "ALUNO"
+    
+    # Linha 1: Identificação do Nome
+    c.setFont("Helvetica", 12)
+    c.drawString(50, inicio_texto_y, "Eu,")
+    
+    # Nome em Negrito
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(75, inicio_texto_y, f"{nome_aluno},")
+    
+    # Linha 2: Matrícula e Ano
+    inicio_texto_y -= espaco_entre_linhas
+    c.setFont("Helvetica", 12)
+    texto_linha2 = f"regularmente matriculado(a) sob o nº {aluno.matricula}, com ingresso em {ano_inicio},"
+    c.drawString(50, inicio_texto_y, texto_linha2)
+    
+    # Linha 3: Solicitação
+    inicio_texto_y -= espaco_entre_linhas
+    texto_linha3 = f"venho por meio deste solicitar a minha rematrícula para o semestre {semestre_atual},"
+    c.drawString(50, inicio_texto_y, texto_linha3)
+    
+    # Linha 4: Conclusão
+    inicio_texto_y -= espaco_entre_linhas
+    c.drawString(50, inicio_texto_y, "nas disciplinas relacionadas a seguir:")
+
+    # --- Tabela de Disciplinas ---
+    # Ajusta o y_inicial da tabela baseando-se onde o texto terminou
+    y_inicial = inicio_texto_y - 40
+    
+    # Cabeçalho da Tabela
+    c.setFillColor(colors.lightgrey)
+    c.rect(50, y_inicial - 5, largura - 100, 20, fill=True, stroke=False)
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica-Bold", 10)
+    
+    c.drawString(60, y_inicial, "CÓDIGO")
+    c.drawString(150, y_inicial, "DISCIPLINA")
+    c.drawString(480, y_inicial, "CH")
+
+    y = y_inicial - 25
+    c.setFont("Helvetica", 10)
+
+    for disc in disciplinas_unicas.values():
+        if y < 150:
+            c.showPage()
+            y = altura - 50
+            c.setFont("Helvetica", 10)
+
+        # Dados da disciplina
+        codigo = disc.codigo if disc.codigo else "---"
+        nome = disc.nome
+        val_ch = getattr(disc, 'carga_horaria', getattr(disc, 'ch', getattr(disc, 'horas', getattr(disc, 'creditos', '--'))))
+        ch = f"{val_ch}h"
+
+        c.drawString(60, y, str(codigo))
+        c.drawString(150, y, nome)
+        c.drawString(480, y, ch)
+        
+        c.setLineWidth(0.5)
+        c.setStrokeColor(colors.lightgrey)
+        c.line(50, y - 5, largura - 50, y - 5)
+        
+        y -= 20
+
+    # --- Assinaturas ---
+    y_assinaturas = 100
+    c.setStrokeColor(colors.black)
+    c.setLineWidth(1)
+
+    # Coordenador
+    c.line(50, y_assinaturas, 250, y_assinaturas)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(50, y_assinaturas - 15, "Coordenador(a)")
+    c.setFont("Helvetica", 9)
+    coord_nome = coordenador.get_full_name() or coordenador.username
+    c.drawString(50, y_assinaturas - 28, coord_nome.upper())
+
+    # Aluno
+    c.line(300, y_assinaturas, 500, y_assinaturas)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(300, y_assinaturas - 15, "Aluno(a) Solicitante")
+    c.setFont("Helvetica", 9)
+    c.drawString(300, y_assinaturas - 28, nome_aluno)
+
+    # Rodapé
+    c.setFont("Helvetica-Oblique", 8)
+    data_hoje = datetime.now().strftime("%d/%m/%Y às %H:%M")
+    c.drawCentredString(largura / 2, 30, f"Documento gerado pelo sistema Acadêmica em {data_hoje}")
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+
+    filename = f"rematricula_{aluno.matricula}.pdf"
+    return FileResponse(buffer, as_attachment=True, filename=filename)
