@@ -47,30 +47,30 @@ class Usuario(AbstractUser):
         return self.username
 
 # ====================================================================
-# Modelos de Estrutura Curricular (Domínio: Matrizes e Disciplinas)
+# Modelos de Estrutura Curricular (Domínio: Cursos, Matrizes e Disciplinas)
 # ====================================================================
+
+class Curso(models.Model):
+    nome = models.CharField(max_length=100, verbose_name="Nome do Curso")
+    
+    class Meta:
+        db_table = 'CURSO'
+        verbose_name = "Curso"
+        verbose_name_plural = "Cursos"
+
+    def __str__(self):
+        return self.nome
 
 class MatrizCurricular(models.Model):
     """
     Define a estrutura curricular de um curso específico.
     """
-    # --- LISTA DE OPÇÕES PARA O DROPDOWN ---
-    CURSOS_CHOICES = [
-        ('Sistemas de Informação', 'Bacharelado em Sistemas de Informação'),
-        ('Ciência da Computação', 'Ciência da Computação'),
-        ('Engenharia de Software', 'Engenharia de Software'),
-        ('Análise e Desenv. de Sistemas', 'Análise e Desenv. de Sistemas'),
-        ('Licenciatura em Matemática', 'Licenciatura em Matemática'),
-        # Adicione outros cursos da sua instituição aqui...
-    ]
-    # ---------------------------------------
-
     nome = models.CharField(max_length=45, verbose_name="Nome da Matriz")
     
-    # Campo alterado para usar choices
-    curso = models.CharField(
-        max_length=100, 
-        choices=CURSOS_CHOICES, 
+    # Aponta para a tabela Curso
+    curso = models.ForeignKey(
+        Curso, 
+        on_delete=models.CASCADE, 
         verbose_name="Curso"
     )
     
@@ -94,7 +94,7 @@ class MatrizCurricular(models.Model):
         verbose_name_plural = "Matrizes Curriculares"
 
     def __str__(self):
-        return f"{self.nome} ({self.ano_referencia})"
+        return f"{self.curso.nome} - {self.nome} ({self.ano_referencia})"
 
 
 class Disciplinas(models.Model):
@@ -130,6 +130,7 @@ class Disciplinas(models.Model):
         verbose_name_plural = "Disciplinas"
 
     def __str__(self):
+        # Retorna "CODIGO - NOME" para facilitar a busca no Select2
         return f"{self.codigo} - {self.nome}"
     
 # ====================================================================
@@ -184,7 +185,8 @@ class Horario(models.Model):
     
     class Meta:
         db_table = 'HORARIO'
-        unique_together = ('turma', 'dia_semana', 'periodo', 'disciplina') 
+        # Garante que uma turma só tenha 1 aula por dia/periodo
+        unique_together = ('turma', 'dia_semana', 'periodo') 
         verbose_name = "Horário"
         verbose_name_plural = "Horários"
     

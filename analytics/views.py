@@ -14,7 +14,8 @@ from .models import Analise, AnaliseItens
 # O "Cérebro" (IA)
 from . import gemini_analytics 
 
-# --- FUNÇÕES HELPER (MANTIDAS IGUAIS) ---
+# --- FUNÇÕES HELPER ---
+
 def serializar_historico(historico_obj):
     itens = HistoricoItens.objects.filter(historico=historico_obj)
     return json.dumps([
@@ -28,8 +29,11 @@ def serializar_historico(historico_obj):
 
 def serializar_matriz(curso_nome):
     try:
-        matriz = MatrizCurricular.objects.filter(curso=curso_nome).first()
+        # AJUSTE 1: Como 'curso' agora é ForeignKey, usamos curso__nome
+        matriz = MatrizCurricular.objects.filter(curso__nome=curso_nome).first()
+        
         if not matriz: return "[]"
+        
         disciplinas = Disciplinas.objects.filter(matriz_curricular=matriz).prefetch_related('pre_requisitos')
         return json.dumps([
             {
@@ -44,20 +48,23 @@ def serializar_matriz(curso_nome):
     except Exception:
         return "[]"
 
-def serializar_horarios(dias_excluidos_lista=None):
+def serializar_horarios(dias_excluidos_lista=None, curso_nome=None):
     """
-    Retorna os horários disponíveis, mas com uma regra de ouro:
-    Se uma disciplina de 4 créditos tem aulas em dias diferentes,
-    e UM desses dias está excluído, a disciplina INTEIRA é removida.
+    Retorna os horários disponíveis filtrados por curso e dias excluídos.
     """
-    if dias_excluidos_lista is None:
-        dias_excluidos_lista = []
-        
-    # Busca todos os horários
-    horarios = Horario.objects.select_related('disciplina', 'turma').all()
+    if dias_excluidos_lista is None: dias_excluidos_lista = []
     
-    # 1. Agrupa por (Turma, Disciplina) para identificar os "pacotes"
-    # Chave: (turma_id, disciplina_id) -> Valor: Lista de objetos Horario
+    # Busca todos os horários trazendo as relações necessárias
+    # AJUSTE 2: Trazemos também o curso da matriz para poder filtrar
+    query = Horario.objects.select_related('disciplina', 'turma', 'disciplina__matriz_curricular__curso')
+    
+    if curso_nome:
+        # AJUSTE 3: Filtra apenas horários de disciplinas que pertencem ao curso do aluno
+        query = query.filter(disciplina__matriz_curricular__curso__nome=curso_nome)
+        
+    horarios = query.all()
+    
+    # Lógica de agrupar horários (para disciplinas de 4 créditos)
     grupos_disciplinas = {}
     for h in horarios:
         chave = (h.turma.id, h.disciplina.id)
@@ -67,16 +74,13 @@ def serializar_horarios(dias_excluidos_lista=None):
     
     horarios_validos = []
     
-    # 2. Valida cada grupo
     for chave, lista_horarios in grupos_disciplinas.items():
-        # Verifica se ALGUM horário desse grupo cai num dia excluído
         grupo_condenado = False
         for h in lista_horarios:
             if h.dia_semana in dias_excluidos_lista:
                 grupo_condenado = True
                 break
         
-        # Se o grupo não foi condenado, adiciona TODOS os horários dele na lista final
         if not grupo_condenado:
             for h in lista_horarios:
                 horarios_validos.append({
@@ -84,7 +88,6 @@ def serializar_horarios(dias_excluidos_lista=None):
                     "sigla_disciplina": h.disciplina.sigla,
                     "dia_semana": h.dia_semana,
                     "periodo": h.periodo,
-                    # Passamos o ID do grupo para a IA saber que devem ir juntos (opcional, mas ajuda)
                     "grupo_id": f"T{h.turma.id}_D{h.disciplina.id}" 
                 })
 
@@ -96,12 +99,10 @@ def serializar_horarios(dias_excluidos_lista=None):
 
 @login_required
 def analisar_historico(request, historico_pk):
-    # O select_related('aluno') puxa os dados do aluno numa única query (otimização)
     historico = get_object_or_404(Historico.objects.select_related('aluno'), pk=historico_pk)
     
     if request.method == 'POST':
         tipo_analise = request.POST.get('tipo_analise')
-        # getlist pega todos os checkboxes marcados com o mesmo nome
         dias_excluidos_lista = request.POST.getlist('dias_excluidos') 
         dias_excluidos_str = ",".join(dias_excluidos_lista)
         
@@ -116,15 +117,13 @@ def analisar_historico(request, historico_pk):
         try:
             historico_json = serializar_historico(historico)
             
-            # ATENÇÃO: Aqui assume que historico.aluno tem um campo 'curso'. 
-            # Se der erro, verifique se o modelo Usuario tem 'curso'.
+            # Tenta obter o curso do aluno
             curso_aluno = getattr(historico.aluno, 'curso', None) 
-            # Se não achar no aluno, tenta achar no próprio histórico (depende do seu model)
-            if not curso_aluno and hasattr(historico, 'curso'):
-                curso_aluno = historico.curso
-                
+            
             matriz_json = serializar_matriz(curso_aluno)
-            horarios_json = serializar_horarios(dias_excluidos_lista)
+            
+            # AJUSTE 4: Passamos o curso_aluno para filtrar os horários
+            horarios_json = serializar_horarios(dias_excluidos_lista, curso_aluno)
 
             lista_ids_horarios = gemini_analytics.gerar_analise_grade(
                 historico_json,
@@ -166,7 +165,7 @@ def analisar_historico(request, historico_pk):
     return render(request, 'analytics/analisar_historico.html', {'historico': historico})
 
 
-@login_required  # <--- CORREÇÃO AQUI: ADICIONADO O @
+@login_required
 def consultar_analise(request, analise_pk):
     analise = get_object_or_404(Analise, pk=analise_pk)
     
@@ -213,19 +212,16 @@ def editar_analise(request, analise_pk):
                 # --- NOVA VALIDAÇÃO DE CONFLITOS ---
                 novos_horarios = Horario.objects.filter(pk__in=horarios_selecionados_ids)
                 
-                # Verifica duplicidade de (dia, periodo)
                 slots_ocupados = set()
                 for h in novos_horarios:
                     slot_signature = (h.dia_semana, h.periodo)
                     
                     if slot_signature in slots_ocupados:
-                        # Achou conflito!
                         raise Exception(f"Conflito detectado: Você selecionou duas disciplinas para {h.dia_semana} no período {h.periodo}.")
                     
                     slots_ocupados.add(slot_signature)
                 # -----------------------------------
 
-                # Se passou, salva tudo
                 AnaliseItens.objects.filter(analise=analise).delete()
                 
                 for h in novos_horarios:
@@ -242,7 +238,16 @@ def editar_analise(request, analise_pk):
         except Exception as e:
             messages.error(request, f"Erro ao salvar: {e}")
     
-    todos_horarios = Horario.objects.select_related('disciplina').order_by('dia_semana', 'periodo')
+    # AJUSTE 5: Filtra os horários disponíveis para edição também pelo curso
+    todos_horarios = Horario.objects.select_related('disciplina', 'turma', 'disciplina__matriz_curricular__curso')
+    
+    # Tenta filtrar pelo curso do aluno da análise, se possível
+    curso_aluno = getattr(analise.historico.aluno, 'curso', None)
+    if curso_aluno:
+        todos_horarios = todos_horarios.filter(disciplina__matriz_curricular__curso__nome=curso_aluno)
+        
+    todos_horarios = todos_horarios.order_by('dia_semana', 'periodo')
+    
     itens_atuais = AnaliseItens.objects.filter(analise=analise)
     
     itens_marcados_signature = set()

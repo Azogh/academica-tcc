@@ -7,10 +7,11 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse
 from django.db.models import Count
 from django.contrib.auth import logout
+from django.http import JsonResponse
 
 # Importações de Modelos e Formulários
 from .models import (
-    Usuario, MatrizCurricular, Disciplinas, Turma, Horario
+    Usuario, MatrizCurricular, Disciplinas, Turma, Horario, Curso
 )
 from .forms import (
     CoordenadorCadastroForm, MatrizCurricularForm, DisciplinaForm,
@@ -339,8 +340,8 @@ def consultar_horarios(request):
 
     # 2. Dados para popular os Selects (Dropdowns)
     # Buscamos cursos distintos nas Matrizes
-    cursos_disponiveis = MatrizCurricular.objects.values_list('curso', flat=True).distinct().order_by('curso')
-    
+    cursos_disponiveis = Curso.objects.all().order_by('nome')
+
     # Buscamos Turmas. 
     # Se um curso foi selecionado, filtramos as turmas que têm aulas nesse curso 
     # (via Horario -> Disciplina -> Matriz -> Curso) para facilitar a vida do usuário.
@@ -461,3 +462,8 @@ def logout_view(request):
     logout(request)
     messages.info(request, "Você saiu do sistema com sucesso.")
     return redirect('login')
+
+def load_disciplinas_por_matriz(request):
+    matriz_id = request.GET.get('matriz_id')
+    disciplinas = Disciplinas.objects.filter(matriz_curricular_id=matriz_id).order_by('nome')
+    return JsonResponse(list(disciplinas.values('id', 'nome', 'codigo')), safe=False)

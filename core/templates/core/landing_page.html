@@ -1,191 +1,335 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acadêmica: Sistema de Rematrículas</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acadêmica: Sistema de Rematrículas</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    :root {
-      --primary-color-dark: #6a11cb;
-      --primary-color-light: #2575fc;
-      --accent-color: #ffb703;
-      --accent-color-hover: #fb8500;
-      --text-color: #fff;
-      --container-bg: rgba(255, 255, 255, 0.1);
-    }
+    <style>
+        :root {
+            --primary-dark: #6a11cb;
+            --primary-light: #2575fc;
+            --accent: #ffb703;
+            --accent-hover: #fb8500;
+            --text: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to right, var(--primary-color-dark), var(--primary-color-light));
-      color: var(--text-color);
-      margin: 0;
-      padding: 0;
-      line-height: 1.6;
-    }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    header {
-      padding: 80px 20px;
-      text-align: center;
-    }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-light));
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
 
-    header h1 {
-      font-size: 3em;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
+        /* --- Animações --- */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    header p {
-      font-size: 1.2em;
-      font-weight: 300;
-      max-width: 650px;
-      margin: 0 auto 30px;
-    }
+        /* --- Header / Hero --- */
+        header {
+            padding: 100px 20px 60px;
+            text-align: center;
+            animation: fadeInDown 1s ease-out;
+        }
 
-    .cta-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
+        header h1 {
+            font-size: 3.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            line-height: 1.2;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
 
-    .cta-button {
-      padding: 15px 30px;
-      background-color: var(--accent-color);
-      color: #2c3e50;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    }
+        header p {
+            font-size: 1.2em;
+            font-weight: 300;
+            max-width: 700px;
+            margin: 0 auto 40px;
+            color: rgba(255, 255, 255, 0.9);
+        }
 
-    .cta-button:hover {
-      background-color: var(--accent-color-hover);
-      transform: translateY(-3px);
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-    }
+        .cta-button {
+            display: inline-block;
+            padding: 16px 40px;
+            background-color: var(--accent);
+            color: #2c3e50;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 183, 3, 0.4);
+        }
 
-    section {
-      background: var(--container-bg);
-      backdrop-filter: blur(10px);
-      border-radius: 15px;
-      padding: 60px 40px;
-      margin: 40px auto;
-      max-width: 960px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
+        .cta-button:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 183, 3, 0.6);
+        }
 
-    section h2 {
-      font-size: 2.3em;
-      font-weight: 600;
-      text-align: center;
-      margin-bottom: 40px;
-      position: relative;
-    }
+        /* --- Seções Gerais --- */
+        main {
+            flex: 1;
+            padding: 0 20px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
 
-    section h2::after {
-      content: '';
-      width: 80px;
-      height: 4px;
-      background: var(--accent-color);
-      position: absolute;
-      bottom: -10px;
-      left: 50%;
-      transform: translateX(-50%);
-      border-radius: 2px;
-    }
+        section {
+            margin-bottom: 60px;
+            animation: fadeInUp 1s ease-out;
+            animation-fill-mode: both;
+        }
+        
+        /* Delay na animação da segunda seção */
+        section:nth-child(2) { animation-delay: 0.3s; }
 
-    .steps, .author {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 30px;
-    }
+        h2 {
+            font-size: 2.2em;
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+            font-weight: 600;
+        }
 
-    .step {
-      flex: 1 1 220px;
-      max-width: 240px;
-      text-align: center;
-    }
+        h2::after {
+            content: '';
+            width: 60px;
+            height: 4px;
+            background: var(--accent);
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
 
-    .step img {
-      width: 70px;
-      margin-bottom: 15px;
-    }
+        /* --- Grid de Passos (Cards) --- */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
 
-    .author img {
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      border: 4px solid var(--accent-color);
-      object-fit: cover;
-    }
+        .step-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: var(--glass-border);
+            border-radius: 20px;
+            padding: 40px 25px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
 
-    .author-text {
-      max-width: 500px;
-      text-align: center;
-    }
+        .step-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
 
-    .author-text h3 {
-      margin: 0;
-      font-size: 1.5em;
-    }
+        .icon-box {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2em;
+            color: var(--accent);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
 
-    .author-text p {
-      margin: 10px 0 20px;
-    }
-  </style>
+        .step-card h3 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .step-card p {
+            font-size: 0.95em;
+            color: rgba(255,255,255,0.8);
+            line-height: 1.5;
+        }
+
+        /* --- Seção Sobre (Perfil) --- */
+        .about-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: var(--glass-border);
+            border-radius: 25px;
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .profile-img {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            border: 4px solid var(--accent);
+            object-fit: cover;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.5);
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(255,255,255,0.1);
+            border-color: #fff;
+        }
+
+        .btn-primary-sm {
+            background-color: var(--accent);
+            color: #2c3e50;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary-sm:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .buttons-wrapper {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            header h1 { font-size: 2.5em; }
+            .steps-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
 
   <header>
-    <h1>Acadêmica: Sistema de Rematrículas Inteligente</h1>
-    <p>Uma plataforma desenvolvida para coordenadores: automatize o processo de análise de históricos, receba sugestões com IA e gere documentos de rematrícula com praticidade.</p>
-    <div class="cta-buttons">
-      <a href="{% url 'login' %}" class="cta-button">Acessar Plataforma</a>
+    <h1>Acadêmica</h1>
+    <p>Revolucionando a gestão de matrículas com inteligência artificial. Otimize análises, evite conflitos e foque no que importa: o aluno.</p>
+    <div>
+        {% if user.is_authenticated %}
+            <a href="{% url 'painel' %}" class="cta-button">Ir para o Painel</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="cta-button">Acessar Plataforma</a>
+        {% endif %}
     </div>
   </header>
 
   <main>
     <section>
-      <h2>Fluxo de Trabalho do Coordenador</h2>
-      <div class="steps">
-        <div class="step">
-          <img src="https://img.icons8.com/color/96/000000/upload.png" alt="Importar Histórico">
+      <h2>Fluxo de Trabalho</h2>
+      <div class="steps-grid">
+        
+        <div class="step-card">
+          <div class="icon-box"><i class="fas fa-file-upload"></i></div>
           <h3>1. Importar Histórico</h3>
-          <p>Carregue o histórico escolar do aluno para análise.</p>
+          <p>Faça upload do PDF do histórico escolar. O sistema extrai os dados automaticamente.</p>
         </div>
-        <div class="step">
-          <img src="https://img.icons8.com/color/96/000000/search.png" alt="Avaliar Histórico">
-          <h3>2. Avaliar Histórico</h3>
-          <p>Verifique disciplinas concluídas e pendentes.</p>
+
+        <div class="step-card">
+            <div class="icon-box"><i class="fas fa-search-plus"></i></div>
+            <h3>2. Avaliar Dados</h3>
+            <p>Verifique disciplinas concluídas, pendentes e a situação atual do aluno.</p>
         </div>
-        <div class="step">
-          <img src="https://img.icons8.com/color/96/000000/artificial-intelligence.png" alt="Sugestões IA">
-          <h3>3. Sugestões com IA</h3>
-          <p>Receba indicações automáticas de disciplinas para matrícula.</p>
+
+        <div class="step-card">
+            <div class="icon-box"><i class="fas fa-robot"></i></div>
+            <h3>3. Inteligência Artificial</h3>
+            <p>O Gemini analisa a matriz e sugere a grade ideal, respeitando pré-requisitos.</p>
         </div>
-        <div class="step">
-          <img src="https://img.icons8.com/color/96/000000/document.png" alt="Gerar Documento">
-          <h3>4. Gerar Documento</h3>
-          <p>Exporte a solicitação pronta para formalização.</p>
+
+        <div class="step-card">
+            <div class="icon-box"><i class="fas fa-file-export"></i></div>
+            <h3>4. Gerar Documento</h3>
+            <p>Exporte a solicitação de matrícula pronta para formalização e assinatura.</p>
         </div>
+
       </div>
     </section>
 
     <section>
-      <h2>Sobre o Projeto</h2>
-      <div class="author">
-        <img src="https://via.placeholder.com/150" alt="Foto do Autor">
-        <div class="author-text">
-          <h3>André Gustavo Silva Ozga</h3>
-          <p>Sou estudante de Sistemas de Informação no IFFar e este é meu TCC. O Acadêmica nasceu da necessidade de modernizar e agilizar a rematrícula, reduzindo burocracias com apoio da Inteligência Artificial.</p>
-          <a href="URL_DO_SEU_GITHUB" target="_blank" class="cta-button">Ver Código no GitHub</a>
+      <div class="about-container">
+        <h2>Sobre o Projeto</h2>
+        
+        <img src="https://github.com/Azogh.png" 
+             alt="Foto de André Gustavo" 
+             class="profile-img">
+
+        <h3 style="margin: 0 0 10px 0; font-size: 1.8em;">André Gustavo Silva Ozga</h3>
+        <p style="color: #ffb703; font-weight: 600; margin-bottom: 20px;">Desenvolvedor</p>
+        
+        <p style="max-width: 600px; margin: 0 auto; line-height: 1.8; color: #e0e0e0;">
+            Sou estudante de Sistemas de Informação no IFFar e este é meu TCC. 
+            O <strong>Acadêmica</strong> nasceu da necessidade de modernizar e agilizar a rematrícula, 
+            reduzindo burocracias acadêmicas com o apoio da IA Generativa.
+        </p>
+
+        <div class="buttons-wrapper">
+            <a href="https://github.com/Azogh/academica-tcc" target="_blank" class="btn-primary-sm">
+                <i class="fab fa-github"></i> Ver Código
+            </a>
+
+            <a href="https://github.com/Azogh" target="_blank" class="btn-outline">
+                <i class="fas fa-user-circle"></i> Meu Perfil
+            </a>
         </div>
       </div>
     </section>
   </main>
+
+  <footer style="text-align: center; padding: 20px; color: rgba(255,255,255,0.5); font-size: 0.9em;">
+      &copy; {% now "Y" %} Acadêmica - Todos os direitos reservados.
+  </footer>
+
 </body>
 </html>

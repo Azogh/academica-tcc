@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import Usuario, MatrizCurricular, Disciplinas, Turma, Horario
-
+from .models import Curso 
 # ====================================================================
 # Formulários de Usuário (COORDENADOR)
 # ====================================================================
@@ -100,6 +100,8 @@ class MatrizCurricularForm(forms.ModelForm):
                 'class': 'form-control', 
                 'placeholder': 'Ex: 2023'
             }),
+            'curso': forms.Select(attrs={
+                'class': 'form-control'}), 
         }
 
 class DisciplinaForm(forms.ModelForm):

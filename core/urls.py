@@ -22,6 +22,7 @@ urlpatterns = [
     path('disciplinas/adicionar/', views.adicionar_disciplina, name='adicionar_disciplina'),
     path('disciplinas/editar/<int:pk>/', views.editar_disciplina, name='editar_disciplina'),
     path('disciplinas/excluir/<int:pk>/', views.excluir_disciplina, name='excluir_disciplina'),
+    path('ajax/load-disciplinas/', views.load_disciplinas_por_matriz, name='ajax_load_disciplinas'),
     
     # URLs para o CRUD de Turmas
     path('turmas/', views.listar_turmas, name='listar_turmas'),

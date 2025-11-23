@@ -157,14 +157,15 @@
         
         <div class="filter-group">
             <label for="curso">1º Selecione o Curso (Filtro)</label>
+
             <select name="curso" id="curso" class="filter-select" onchange="this.form.submit()">
-                <option value="">Todos os Cursos</option>
-                {% for curso in cursos_disponiveis %}
-                    <option value="{{ curso }}" {% if curso == curso_selecionado %}selected{% endif %}>
-                        {{ curso }}
-                    </option>
-                {% endfor %}
-            </select>
+    <option value="">Todos os Cursos</option>
+    {% for curso_obj in cursos_disponiveis %}
+        <option value="{{ curso_obj.id }}" {% if curso_obj.id|stringformat:"s" == curso_selecionado %}selected{% endif %}>
+            {{ curso_obj.nome }}
+        </option>
+    {% endfor %}
+</select>
         </div>
 
         <div class="filter-group">

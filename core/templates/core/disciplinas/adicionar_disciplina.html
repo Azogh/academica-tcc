@@ -122,6 +122,34 @@
                 toggleCheckbox.checked = true;
                 $(container).show();
             }
+
+            $('#id_matriz_curricular').change(function() {
+                var url = "{% url 'ajax_load_disciplinas' %}";  
+                var matrizId = $(this).val();
+
+                if (matrizId) {
+                    $.ajax({
+                        url: url,
+                        data: {
+                            'matriz_id': matrizId
+                        },
+                        success: function(data) {
+                            var $select = $('#id_pre_requisitos');
+                            $select.empty(); // Limpa as opções atuais
+                            
+                            // Adiciona as novas opções filtradas
+                            $.each(data, function(key, value) {
+                                $select.append($('<option></option>')
+                                    .attr('value', value.id)
+                                    .text(value.codigo + ' - ' + value.nome));
+                            });
+                            
+                            // Força atualização do Select2 para ele perceber a mudança
+                            $select.trigger('change'); 
+                        }
+                    });
+                }
+            });
         });
     </script>
 {% endblock %}
