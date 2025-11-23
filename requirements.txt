@@ -4,13 +4,20 @@ Django~=5.2.6
 # Pacote para manipulação de PDF (usado em upload/views.py)
 pypdf2
 pdfplumber
+
+# Processamento de Texto
 unidecode
 
+# Geraçãod e PDF
+reportlab
 
 # Pacote para a API de IA do Google (Gemini)
 google-generativeai
 google-genai
+
+# Variaveis de ambiente 
 python-dotenv
+
 # Para SQLite, que é o seu banco de dados atual
 # Nenhum pacote adicional é necessário para sqlite3, pois ele é nativo do Python.
 
