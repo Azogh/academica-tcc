@@ -5,8 +5,11 @@ from django.db import transaction
 from django.contrib import messages
 from django.db.models import Q
 
+# Certifique-se de que o forms.py existe com esse formulário
 from .forms import UploadHistoricoForm
 from .models import Aluno, Historico, HistoricoItens
+
+# Sua função de extração via Gemini
 from .gemini_pdf import extrair_disciplinas_gemini
 
 @login_required
@@ -29,15 +32,16 @@ def importar_historico(request):
                 )
                 
                 # 3. CHAMA A IA IMEDIATAMENTE
-                # Garante ponteiro no início
+                # Garante ponteiro no início do arquivo
                 arquivo_pdf.seek(0)
                 
-                # Chama o Gemini (que agora tem retry automático)
+                # Chama o Gemini
                 dados_extraidos = extrair_disciplinas_gemini(arquivo_pdf)
 
                 if dados_extraidos:
                     # 4. Salva no Banco
                     with transaction.atomic():
+                        # Limpa itens antigos se houver (para evitar duplicidade em reprocessamento)
                         HistoricoItens.objects.filter(historico=historico).delete()
 
                         count = 0
@@ -51,6 +55,12 @@ def importar_historico(request):
                             freq = item.get('frequencia')
                             if freq == 'null' or freq == '': freq = None
 
+                            # --- CORREÇÃO DO ERRO NOT NULL (Semestre) ---
+                            semestre = item.get('periodo')
+                            # Se for None, string vazia ou 'null', força um valor padrão '-'
+                            if not semestre or semestre == 'null': 
+                                semestre = '-'
+
                             HistoricoItens.objects.create(
                                 historico=historico,
                                 disciplina_nome=item.get('nome', 'N/A'),
@@ -59,7 +69,7 @@ def importar_historico(request):
                                 nota=nota,
                                 frequencia=freq,
                                 status_disciplina=item.get('situacao', 'N/A'),
-                                semestre_cursado=item.get('periodo', '-')
+                                semestre_cursado=semestre # Agora blindado contra None
                             )
                             count += 1
 
@@ -73,11 +83,12 @@ def importar_historico(request):
                     messages.error(request, "Falha: A IA não conseguiu ler os dados. Tente novamente em alguns minutos.")
 
             except Exception as e:
+                # Se a variável 'historico' foi criada, marca como erro
                 if 'historico' in locals():
                     historico.status = 'ERRO'
                     historico.save()
                 print(f"Erro interno na view: {e}")
-                messages.error(request, "Erro interno no processamento.")
+                messages.error(request, f"Erro interno no processamento: {e}")
             
             return redirect('upload:importar_historico')
             
@@ -93,7 +104,8 @@ def importar_historico(request):
         'ultimo_historico': ultimo_historico
     })
 
-# --- Outras Views (Consulta, Detalhe, Exclusão) Mantidas ---
+# --- Outras Views (Consulta, Detalhe, Exclusão) ---
+
 @login_required
 def consultar_historicos(request):
     query = request.GET.get('q', '') 
