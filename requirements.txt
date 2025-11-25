@@ -1,20 +1,23 @@
 # Pacotes principais
 Django~=5.2.6
 
-# Pacote para manipulação de PDF (usado em upload/views.py)
+# Banco de Dados e SQL
+# Nota: sqlite3 é nativo do Python, não precisa listar aqui.
+sqlparse       # Auxiliar do Django para manipulação de SQL
+
+# Manipulação de PDF (Upload e Leitura)
 pypdf2
 pdfplumber
+
+# Geração de PDF (Relatórios)
+reportlab
 
 # Processamento de Texto
 unidecode
 
-# Geraçãod e PDF
-reportlab
-
-# Pacote para a API de IA do Google (Gemini)
+# Inteligência Artificial (Google Gemini)
 google-generativeai
 google-genai
 
-# Variaveis de ambiente 
+# Variáveis de Ambiente (.env)
 python-dotenv
-

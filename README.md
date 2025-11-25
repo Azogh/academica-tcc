@@ -13,7 +13,7 @@ O **Acadêmica** é uma plataforma desenvolvida para otimizar o processo de rema
 * **Autenticação Segura:** Login, Logout e Recuperação de Senha.
 * **Dashboard Interativo:** Gráficos (Chart.js) com dados reais sobre disciplinas, turmas e índices de ocupação.
 * **Gestão Acadêmica (CRUDs):**
-    * **Matrizes Curriculares:** Cadastro com versionamento.
+    * **Matrizes Curriculares:** Cadastro com versionamento (Ex: Matriz Nova 2023 vs Matriz Antiga).
     * **Disciplinas:** Vínculo com matrizes e sistema de **Pré-requisitos Inteligente** (Select2).
     * **Turmas & Horários:** Cadastro de ofertas com **validação automática de conflitos** e suporte a disciplinas de 4 créditos (cadastro duplo automático).
 
@@ -49,6 +49,7 @@ O **Acadêmica** é uma plataforma desenvolvida para otimizar o processo de rema
 ### Pré-requisitos
 * Python 3.10+ instalado.
 * Git.
+* Cliente SQLite3 (para popular dados de teste).
 
 ### Passo a Passo
 
@@ -88,13 +89,28 @@ O **Acadêmica** é uma plataforma desenvolvida para otimizar o processo de rema
     python manage.py migrate
     ```
 
-6.  **Crie um Superusuário (Opcional)**
-    Para acessar o /admin do Django:
+6.  **🧪 Populando com Dados Reais/Simulados (Importante)**
+    O projeto inclui um script SQL (`popular_banco.sql`) contendo a estrutura real do curso (PPCs Antigo e Novo, Disciplinas) e dados simulados de turmas e alunos para teste imediato.
+
+    **Linux (Ubuntu/Debian):**
+    ```bash
+    # Instale o cliente sqlite se não tiver
+    sudo apt install sqlite3 
+    
+    # Importe os dados
+    sqlite3 db.sqlite3 < popular_banco.sql
+    ```
+
+    **Windows:**
+    Utilize o *DB Browser for SQLite* ou o terminal se tiver o sqlite3 configurado no PATH.
+
+7.  **Crie um Superusuário**
+    Para acessar o sistema e o painel administrativo (/admin):
     ```bash
     python manage.py createsuperuser
     ```
 
-7.  **Execute o Projeto**
+8.  **Execute o Projeto**
     ```bash
     python manage.py runserver
     ```
@@ -111,5 +127,3 @@ O **Acadêmica** é uma plataforma desenvolvida para otimizar o processo de rema
 ## 📝 Licença
 
 Este projeto foi desenvolvido para fins acadêmicos.
-
----
